@@ -8,7 +8,7 @@ class DeepQNet:
         
         model = keras.Sequential()
         
-        model.add(keras.layers.Flatten(input_shape = (96, 96, 3)))#state_shape))
+        model.add(keras.layers.Flatten(input_shape = state_shape))
         #model.add(keras.layers.Input(shape = state_shape))
         #model.add(keras.layers.Flatten())
         

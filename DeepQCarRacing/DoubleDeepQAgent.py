@@ -24,7 +24,7 @@ class DoubleDeepQAgent:
         self.training_states= []
         self.training_qValues = []
         
-    def __init__(self, env, path, epsilon_decay):
+    def load(self, env, path, epsilon_decay):        
         self.env = env
         self.epsilon = 1.
         self.epsilon_decay = epsilon_decay
@@ -46,7 +46,7 @@ class DoubleDeepQAgent:
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
-            return np.argmax(self.qNet.run(state))
+            return self.get_action(state)
             
             
         
