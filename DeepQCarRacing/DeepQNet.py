@@ -23,9 +23,12 @@ class DeepQNet:
     
     def __init__(self, env, layer_sizes, activation_functions, init, learning_rate):
         self.model = DeepQNet.build_model(env, layer_sizes, activation_functions, init, learning_rate)
-        
-    def __init__(self, path):
-        self.model = keras.models.load_model(path)
+
+    @staticmethod    
+    def load(env, epsilon_decay, path):
+        dqn = DeepQNet(env, [], [], None, 0)
+        dqn.model = keras.models.load_model(path)
+        return dqn
         
     def get_weights(self):
         return self.model.get_weights()
@@ -41,8 +44,9 @@ class DeepQNet:
         history = self.model.fit(
             states,
             qValues,
-            batch_size=64,
-            epochs=100
+            batch_size = 64,
+            epochs = 100,
+            verbose = 0
         )
         
         return history

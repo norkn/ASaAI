@@ -6,8 +6,8 @@ import DeepQNet as dqn
 
 #experience replay
 
-TRAINING_ITERATION = 100
-WEIGHTS_TRANSFER_ITERATION = 500
+TRAINING_ITERATION = 10
+WEIGHTS_TRANSFER_ITERATION = 50
 
 class DoubleDeepQAgent:
     
@@ -23,19 +23,15 @@ class DoubleDeepQAgent:
         
         self.training_states= []
         self.training_qValues = []
+    
+    @staticmethod
+    def load(env, path, epsilon_decay):
+        model = DoubleDeepQAgent(env, 0, [], tf.keras.initializers.Zeros(), 0, epsilon_decay)
         
-    def load(self, env, path, epsilon_decay):        
-        self.env = env
-        self.epsilon = 1.
-        self.epsilon_decay = epsilon_decay
-        
-        self.numIterations = 1
-        
-        self.qNet = dqn.DeepQNet(path)
-        self.targetNet = dqn.DeepQNet(path)
-        
-        self.training_states= []
-        self.training_qValues = []
+        model.qNet = dqn.DeepQNet.load(env, epsilon_decay, path)
+        model.targetNet = dqn.DeepQNet.load(env, epsilon_decay, path)
+
+        return model
         
     def get_action(self, state):
         return np.argmax(self.qNet.run(state))
@@ -53,17 +49,15 @@ class DoubleDeepQAgent:
     def train(self, state, action, reward, next_state):
         target = reward + self.targetNet.run(next_state)
         
-        self.training_states.append(state.reshape(1, *state.shape))
-        self.training_qValues.append(target)
+        self.training_states.append(state)
+        self.training_qValues.append(target[0])
+        print(target[0])
         
-        if self.numIterations % TRAINING_ITERATION == 0:
-            print(len(self.training_states), len(self.training_qValues))
-            print(self.training_states[0].shape, self.training_qValues[0].shape)
+        if self.numIterations % TRAINING_ITERATION == 0:            
+            training_states = np.array(self.training_states)
+            training_qValues = np.array(self.training_qValues)
             
-            self.training_states = np.array(self.training_states)
-            self.training_qValues = np.array(self.training_qValues)
-            
-            self.qNet.train(self.training_states, self.training_qValues)
+            self.qNet.train(training_states, training_qValues)
             self.training_states = []
             self.training_qValues = []
             
