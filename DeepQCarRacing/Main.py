@@ -5,13 +5,14 @@ import DoubleDeepQAgent as ddqa
 
 FILENAME = 'CarRacingDDQWeights.keras'
 
-ITERATIONS_TRAINING = 2000
-ITERATIONS_RUNNING = 1000
+ITERATIONS_TRAINING = 200
+ITERATIONS_RUNNING = 100
 
 LAYER_SIZES = [24, 12]
 LAYER_ACTIVATIONS = ['relu', 'relu', 'linear']
 LEARNING_RATE = 0.001
 
+GAMMA = 0.7
 EPSILON_DECAY = 0.9999
 
 def run(env, ddqAgent, num_iterations, train = True):    
@@ -53,20 +54,20 @@ def run(env, ddqAgent, num_iterations, train = True):
 
 def mainTraining():
     env = gym.make("CarRacing-v2", continuous = False)
-    ddqAgent = ddqa.DoubleDeepQAgent(env, LAYER_SIZES, LAYER_ACTIVATIONS, tf.keras.initializers.Zeros(), LEARNING_RATE, EPSILON_DECAY)  
+    ddqAgent = ddqa.DoubleDeepQAgent(env, LAYER_SIZES, LAYER_ACTIVATIONS, tf.keras.initializers.Zeros(), LEARNING_RATE, GAMMA, EPSILON_DECAY)  
     
     run(env, ddqAgent, ITERATIONS_TRAINING, train = True)
     
 def mainContinueTraining():
     env = gym.make("CarRacing-v2", continuous = False)
-    ddqAgent = ddqa.DoubleDeepQAgent.load(env, FILENAME, EPSILON_DECAY)
+    ddqAgent = ddqa.DoubleDeepQAgent.load(env, FILENAME, GAMMA, EPSILON_DECAY)
     
     run(env, ddqAgent, ITERATIONS_TRAINING, train = True)
     
     
 def mainRun():
     env = gym.make("CarRacing-v2", continuous = False, render_mode = "human")
-    ddqAgent = ddqa.DoubleDeepQAgent.load(env, FILENAME, EPSILON_DECAY)
+    ddqAgent = ddqa.DoubleDeepQAgent.load(env, FILENAME, GAMMA, EPSILON_DECAY)
     
     run(env, ddqAgent, ITERATIONS_RUNNING, train = False)
     

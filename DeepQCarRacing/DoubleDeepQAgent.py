@@ -12,14 +12,16 @@ WEIGHTS_TRANSFER_ITERATION = 50
 
 class DoubleDeepQAgent:
     
-    def __init__(self, env, layer_sizes, activation_functions, init, learning_rate, epsilon_decay):
+    def __init__(self, env, layer_sizes, activation_functions, init, learning_rate, gamma, epsilon_decay):
 
         self.env = env
         
         state = self.env.observation_space.sample()
-        print(op.ObservationProcessor.get_state(state))
         self.state_shape = tuple([len(op.ObservationProcessor.get_state(state))])
         
+        self.action_shape = (5,)
+        
+        self.gamma = gamma
         self.epsilon = 1.
         self.epsilon_decay = epsilon_decay
         
@@ -39,10 +41,14 @@ class DoubleDeepQAgent:
         model.targetNet = dqn.DeepQNet.load(model.state_shape, epsilon_decay, path)
 
         return model
+    
+    def get_Q_values(self, state):
+        processed_state = op.ObservationProcessor.get_state(state)
         
-    def get_action(self, state):
-        state = op.ObservationProcessor.get_state(state)
-        return np.argmax(self.qNet.run(state))
+        return self.qNet.run(processed_state)
+    
+    def get_action(self, state):        
+        return np.argmax(self.get_Q_values(state))
         
     def get_action_epsilon_greedy(self, state):
         self.epsilon *= self.epsilon_decay
@@ -55,14 +61,19 @@ class DoubleDeepQAgent:
             
         
     def train(self, state, action, reward, next_state):
-        state = op.ObservationProcessor.get_state(state)
-        next_state = op.ObservationProcessor.get_state(next_state)
+        processed_state = op.ObservationProcessor.get_state(state)
+        processed_next_state = op.ObservationProcessor.get_state(next_state)
         
-        target = reward + self.targetNet.run(next_state)
+        rewards_vector = np.zeros(self.action_shape)
+        rewards_vector[action] = reward
+        target = rewards_vector + self.gamma * self.targetNet.run(processed_next_state)
         
-        self.training_states.append(state)
+        print('Q(s): ', self.get_Q_values(state))
+        print("gamma * Q(s')", self.gamma * self.targetNet.run(processed_next_state))
+        print('target: ', target)
+        
+        self.training_states.append(processed_state)
         self.training_qValues.append(target[0])
-        print(target[0])
         
         if self.numIterations % TRAINING_ITERATION == 0:            
             training_states = np.array(self.training_states)
