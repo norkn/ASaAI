@@ -34,8 +34,8 @@ class DoubleDeepQAgent:
         self.training_qValues = []
     
     @staticmethod
-    def load(env, path, epsilon_decay):
-        model = DoubleDeepQAgent(env, 0, [], tf.keras.initializers.Zeros(), 0, epsilon_decay)
+    def load(env, path, gamma, epsilon_decay):
+        model = DoubleDeepQAgent(env, 0, [], tf.keras.initializers.Zeros(), 0, gamma, epsilon_decay)
         
         model.qNet = dqn.DeepQNet.load(model.state_shape, epsilon_decay, path)
         model.targetNet = dqn.DeepQNet.load(model.state_shape, epsilon_decay, path)
@@ -67,10 +67,6 @@ class DoubleDeepQAgent:
         rewards_vector = np.zeros(self.action_shape)
         rewards_vector[action] = reward
         target = rewards_vector + self.gamma * self.targetNet.run(processed_next_state)
-        
-        print('Q(s): ', self.get_Q_values(state))
-        print("gamma * Q(s')", self.gamma * self.targetNet.run(processed_next_state))
-        print('target: ', target)
         
         self.training_states.append(processed_state)
         self.training_qValues.append(target[0])
