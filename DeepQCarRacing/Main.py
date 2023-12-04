@@ -5,7 +5,7 @@ import DoubleDeepQAgent as ddqa
 
 FILENAME = 'CarRacingDDQWeights.keras'
 
-ITERATIONS_TRAINING = 5000
+ITERATIONS_TRAINING = 2000
 ITERATIONS_RUNNING = 1000
 
 LAYER_SIZES = [24, 12]
@@ -70,6 +70,6 @@ def mainRun():
     
     run(env, ddqAgent, ITERATIONS_RUNNING, train = False)
     
-#mainTraining()
+mainTraining()
 #mainContinueTraining()
-mainRun()
+#mainRun()
