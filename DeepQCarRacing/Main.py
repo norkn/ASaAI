@@ -5,10 +5,10 @@ import DoubleDeepQAgent as ddqa
 
 FILENAME = 'CarRacingDDQWeights.keras'
 
-ITERATIONS_TRAINING = 2000
-ITERATIONS_RUNNING = 1000
+ITERATIONS_TRAINING = 20
+ITERATIONS_RUNNING = 10
 
-LAYER_SIZES = [24, 12]
+LAYER_SIZES = [48, 24]
 LAYER_ACTIVATIONS = ['relu', 'relu', 'linear']
 LEARNING_RATE = 0.001
 
@@ -23,7 +23,12 @@ def run(env, ddqAgent, num_iterations, train = True):
         if train:
             action = ddqAgent.get_action_epsilon_greedy(state)
             
+            #first pick up speed to get things going
+            if i < 100:
+                action = 3
+            
             next_state, reward, terminated, truncated, info = env.step(action)
+            print('action: ', action, 'reward: ', reward)
         
             ddqAgent.train(state, action, reward, next_state)
         
@@ -31,10 +36,6 @@ def run(env, ddqAgent, num_iterations, train = True):
             
         else:
             action = ddqAgent.get_action(state)
-            
-            #first pick up speed to get things going
-            if i < 100:
-                action = 3
             
             state, reward, terminated, truncated, info = env.step(action)
             print('action: ', action, 'reward: ', reward)
@@ -68,5 +69,5 @@ def mainRun():
     run(env, ddqAgent, ITERATIONS_RUNNING, train = False)
     
 mainTraining()
-#mainContinueTraining()
-#mainRun()
+mainContinueTraining()
+mainRun()

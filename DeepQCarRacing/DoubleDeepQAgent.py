@@ -1,4 +1,3 @@
-import tensorflow as tf
 import numpy as np
 
 import DeepQNet as dqn
@@ -7,8 +6,8 @@ import ObservationProcessor as op
 
 #experience replay
 
-TRAINING_ITERATION = 100
-WEIGHTS_TRANSFER_ITERATION = 300
+TRAINING_ITERATION = 1000
+WEIGHTS_TRANSFER_ITERATION = 1500
 
 class DoubleDeepQAgent:
     
@@ -17,9 +16,9 @@ class DoubleDeepQAgent:
         self.env = env
         
         state = self.env.observation_space.sample()
-        self.state_shape = tuple([len(op.ObservationProcessor.get_state(state))])
+        self.state_shape = (len(op.ObservationProcessor.get_state(state)), )
         
-        self.action_shape = (5,)
+        self.action_shape = (env.action_space.n, )
         
         self.gamma = gamma
         self.epsilon = 1.
@@ -27,18 +26,22 @@ class DoubleDeepQAgent:
         
         self.numIterations = 1
         
-        self.qNet = dqn.DeepQNet(self.state_shape, layer_sizes, activation_functions, init, learning_rate)
-        self.targetNet = dqn.DeepQNet(self.state_shape, layer_sizes, activation_functions, init, learning_rate)
+        if layer_sizes == None:
+            self.qNet = None
+            self.targetNet = None
+        else:
+            self.qNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate)
+            self.targetNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate)
         
         self.training_states= []
         self.training_qValues = []
     
     @staticmethod
     def load(env, path, gamma, epsilon_decay):
-        model = DoubleDeepQAgent(env, 0, [], tf.keras.initializers.Zeros(), 0, gamma, epsilon_decay)
+        model = DoubleDeepQAgent(env, *[None]*4, gamma, epsilon_decay)
         
-        model.qNet = dqn.DeepQNet.load(model.state_shape, epsilon_decay, path)
-        model.targetNet = dqn.DeepQNet.load(model.state_shape, epsilon_decay, path)
+        model.qNet = dqn.DeepQNet.load(path)
+        model.targetNet = dqn.DeepQNet.load(path)
 
         return model
     
