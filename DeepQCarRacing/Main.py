@@ -13,7 +13,7 @@ LAYER_ACTIVATIONS = ['relu', 'relu', 'linear']
 LEARNING_RATE = 0.001
 
 GAMMA = 0.7
-EPSILON_DECAY = 0.9999
+EPSILON_DECAY = 0.999
 
 def run(env, ddqAgent, num_iterations, train = True):    
     state, info = env.reset()
@@ -22,10 +22,6 @@ def run(env, ddqAgent, num_iterations, train = True):
         
         if train:
             action = ddqAgent.get_action_epsilon_greedy(state)
-            
-            #first pick up speed to get things going
-            if i < 100:
-                action = 3
             
             next_state, reward, terminated, truncated, info = env.step(action)
         
@@ -40,8 +36,8 @@ def run(env, ddqAgent, num_iterations, train = True):
             if i < 100:
                 action = 3
             
-            print(action)
             state, reward, terminated, truncated, info = env.step(action)
+            print('action: ', action, 'reward: ', reward)
         
         if terminated or truncated:
             state, info = env.reset()
@@ -71,6 +67,6 @@ def mainRun():
     
     run(env, ddqAgent, ITERATIONS_RUNNING, train = False)
     
-#mainTraining()
+mainTraining()
 #mainContinueTraining()
-mainRun()
+#mainRun()

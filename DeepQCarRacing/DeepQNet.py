@@ -12,12 +12,12 @@ class DeepQNet:
         
         model.add(keras.layers.Flatten(input_shape = state_shape))
         
+        model.add(keras.layers.Dense(48, activation = 'relu', kernel_initializer = init))
         model.add(keras.layers.Dense(24, activation = 'relu', kernel_initializer = init))
-        model.add(keras.layers.Dense(12, activation = 'relu', kernel_initializer = init))
         
         model.add(keras.layers.Dense(action_shape, activation = 'linear', kernel_initializer = init))
         
-        model.compile(loss = tf.keras.losses.Huber(), optimizer = tf.keras.optimizers.Adam(lr = learning_rate), metrics = ['accuracy'])
+        model.compile(loss = tf.keras.losses.Huber(), optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate))
         
         return model
     
@@ -47,7 +47,7 @@ class DeepQNet:
             qValues,
             batch_size = 64,
             epochs = 100,
-            verbose = 0
+            #verbose = 0
         )
         
         return history

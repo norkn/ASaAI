@@ -7,8 +7,8 @@ import ObservationProcessor as op
 
 #experience replay
 
-TRAINING_ITERATION = 10
-WEIGHTS_TRANSFER_ITERATION = 50
+TRAINING_ITERATION = 100
+WEIGHTS_TRANSFER_ITERATION = 300
 
 class DoubleDeepQAgent:
     
@@ -64,7 +64,7 @@ class DoubleDeepQAgent:
         processed_state = op.ObservationProcessor.get_state(state)
         processed_next_state = op.ObservationProcessor.get_state(next_state)
         
-        target_vector = self.get_Q_values(state)
+        target_vector = self.get_Q_values(state)[0]
         target_vector[action] = reward + self.gamma * self.targetNet.run(processed_next_state)[0][action] ###########################
         
         self.training_states.append(processed_state)
