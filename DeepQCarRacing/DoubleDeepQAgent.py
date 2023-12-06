@@ -64,14 +64,13 @@ class DoubleDeepQAgent:
         processed_state = op.ObservationProcessor.get_state(state)
         processed_next_state = op.ObservationProcessor.get_state(next_state)
         
-        rewards_vector = np.zeros(self.action_shape)
-        rewards_vector[action] = reward
-        target = rewards_vector + self.gamma * self.targetNet.run(processed_next_state)
+        target_vector = self.get_Q_values(state)
+        target_vector[action] = reward + self.gamma * self.targetNet.run(processed_next_state)[0][action] ###########################
         
         self.training_states.append(processed_state)
-        self.training_qValues.append(target[0])
+        self.training_qValues.append(target_vector)
         
-        if self.numIterations % TRAINING_ITERATION == 0:            
+        if self.numIterations % TRAINING_ITERATION == 0:
             training_states = np.array(self.training_states)
             training_qValues = np.array(self.training_qValues)
             

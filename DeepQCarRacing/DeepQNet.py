@@ -11,8 +11,6 @@ class DeepQNet:
         model = keras.Sequential()
         
         model.add(keras.layers.Flatten(input_shape = state_shape))
-        #model.add(keras.layers.Input(shape = state_shape))
-        #model.add(keras.layers.Flatten())
         
         model.add(keras.layers.Dense(24, activation = 'relu', kernel_initializer = init))
         model.add(keras.layers.Dense(12, activation = 'relu', kernel_initializer = init))
@@ -40,7 +38,7 @@ class DeepQNet:
         
     def run(self, state):
         state = np.array(state)
-        return self.model.predict(state.reshape(1, *state.shape))
+        return self.model.predict(state.reshape(1, *state.shape)) ##################
 
     
     def train(self, states, qValues):        
