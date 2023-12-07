@@ -1,4 +1,3 @@
-#import cv2
 import numpy as np
 
 class ObservationProcessor:
@@ -16,25 +15,23 @@ class ObservationProcessor:
         return 1
 
     @staticmethod
+    def _get_value_from_pixels(observation, dX, dY):
+        cropped_state = observation[dX[0]:dX[1], dY[0]:dY[1], :]
+        gray_state = (cropped_state[:, :, 0] + cropped_state[:, :, 1] + cropped_state[:, :, 2]) / 3.
+
+        return ObservationProcessor._threshold_and_sum(gray_state)
+
+    @staticmethod
     def get_speed(observation):
-        gray_state = observation[:, :, 0]#cv2.cvtColor(observation, cv2.COLOR_RGB2GRAY)
-        cropped_state = gray_state[88:93, 12:13]
-        #observation_resized = cv2.resize(cropped_state, (40 * cropped_state.shape[1], 40 * cropped_state.shape[0]))
-        return ObservationProcessor._threshold_and_sum(cropped_state)
+        return ObservationProcessor._get_value_from_pixels(observation, (88, 93), (12, 13))
 
     @staticmethod
     def get_left_steering(observation):
-        gray_state = observation[:, :, 0]#cv2.cvtColor(observation, cv2.COLOR_RGB2GRAY)
-        cropped_state = gray_state[89:90, 41:47]
-        #observation_resized = cv2.resize(cropped_state, (40 * cropped_state.shape[1], 40 * cropped_state.shape[0]))
-        return ObservationProcessor._threshold_and_sum(cropped_state)
+        return ObservationProcessor._get_value_from_pixels(observation, (89, 90), (41, 47))
 
     @staticmethod
     def get_right_steering(observation):
-        gray_state = observation[:, :, 0]#cv2.cvtColor(observation, cv2.COLOR_RGB2GRAY)
-        cropped_state = gray_state[89:90, 48:54]
-        #observation_resized = cv2.resize(cropped_state, (40 * cropped_state.shape[1], 40 * cropped_state.shape[0]))
-        return ObservationProcessor._threshold_and_sum(cropped_state)
+        return ObservationProcessor._get_value_from_pixels(observation, (89, 90), (48, 54))
 
     @staticmethod
     def get_vision(observation):
@@ -44,8 +41,6 @@ class ObservationProcessor:
         far_vision_left = observation[46:47, 44:45]
         far_vision_right = observation[46:47, 51:52]
         vision_stripe = observation[50:51, 38:58]
-        #vision_right = observation[70:71, 59:60]
-
 
         on_grass_left = observation[70:71, 46:47]
         on_grass_right = observation[70:71, 49:50]
@@ -55,7 +50,6 @@ class ObservationProcessor:
         far_vision_left = ObservationProcessor._check_vision(far_vision_left)
         far_vision_right = ObservationProcessor._check_vision(far_vision_right)
         vision_stripe = ObservationProcessor._check_vision(vision_stripe)
-        #vision_right = ObservationProcessor._check_vision(vision_right)
 
         on_grass_left = 0 if ObservationProcessor._check_vision(on_grass_left) else 1
         on_grass_right = 0 if ObservationProcessor._check_vision(on_grass_right) else 1
