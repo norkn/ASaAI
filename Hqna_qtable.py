@@ -288,25 +288,26 @@ observation, info = env.reset()
 #qtable master 2 1183
 #Episode: 76, Total Reward: -4806.44444444442, Epsilon: 0.09317615503395871 LR:  0.046588077516979354  
 filename = "Q_MASTER_2.pkl"
+newfilename = "Q_MASTER_2_1.pkl"
 action_size = 5
 state_size = 1
 
-actionlist = []
+highscores = []
 # Initialize Q-table as a defaultdict
 q_table = QTable(state_size, action_size)
-q_table.load_q_table(filename)
+q_table.load_q_table(newfilename)
 # Define hyperparameters
-learning_rate = 0.01
-discount_factor = 0.99
+learning_rate = 0.001
+discount_factor = 0.999
 gamma = 0.85
-epsilon = 0.01
+epsilon = 0.10
 episodes = 5000
-timesteps = 1500
+timesteps = 1000
 
 
 #learning helper 
-fine_motor_skills = 2
-gras_counter = 0
+fine_motor_skills = 1
+ingame_reward = 0
 
 processor = ObservationProcessor()
 
@@ -323,13 +324,13 @@ for episode in range(episodes):
     if episode % 50 == 0:
         fine_motor_skills -= 1 if fine_motor_skills > 1 else 0
     
-    gras_counter = 0
+    
     for timestep in range(timesteps):
 
         state = processor.get_state(observation)
         
         discrete_state = discretize_state(state)
-
+        print(len(discrete_state))
         # Update Q-value using the Q-learning update rule
         q_values = q_table.get_q_values(discrete_state)
         old_Q = np.copy(q_values)  # Store the old Q-values for comparison
@@ -342,7 +343,8 @@ for episode in range(episodes):
 
         # Take the action
         next_observation, reward, terminated, truncated, info = env.step(action)
-        
+        ingame_reward += reward
+
         vision_list = processor.get_vision(observation)
         gray_vision_sum = sum(vision_list[:len(vision_list)-1])
         #print("GREY: " ,(gray_vision_sum / 10), " SPEED: ",  processor.get_speed(observation))
@@ -350,21 +352,7 @@ for episode in range(episodes):
             reward += -1
         else:
             reward += (gray_vision_sum / 10) * processor.get_speed(observation)
-        print("REWARD: " , reward)
-
-        #negativ reward for having 0 speed... ITS A RACE
-        #if state[0] == 0:
-        #    reward += -3
-
-        #negativ reward for beeing on the grass
-        #if state[9] == 1 :
-        #    gras_counter -= 0.2
-        #    reward += gras_counter
-
-        #Bonus reward for beeing with 2 speed or greater on the track
-        #if state[0] >= 1 and state[3] == 1 and state[4] == 1:
-        #    reward += 1
-        
+        #print("REWARD: " , reward)
         
         next_state =  processor.get_state(next_observation)
         discrete_next_state = discretize_state(next_state)
@@ -378,11 +366,7 @@ for episode in range(episodes):
 
         q_table.update_q_value(discrete_state, action, q_values[action])
 
-        #print("Old Q-values:", old_Q, "New Q-values:", new_Q, " Action: ", action)
-
-
-        
-        actionlist.append(action)
+      
 
         #print("Reward: ", reward)
         total_reward += reward
@@ -392,6 +376,8 @@ for episode in range(episodes):
         
 
         if terminated or timestep == timesteps or total_reward < -200 :
+            highscores.append(int(ingame_reward))
+            ingame_reward = 0
             break  
     
             # Print the frequency of each action after the episode
@@ -406,8 +392,12 @@ for episode in range(episodes):
     #actionlist.clear()      
     print(f"Episode: {episode + 1}, Total Reward: {total_reward}, Epsilon: {epsilon}", "LR: ", learning_rate)
 
-
-    q_table.save_q_table(filename)
+    highscores.sort(reverse=True)
+    c = 0
+    for i in highscores[:3]:
+        c += 1
+        print(f"HIGHSCORE No. {c}: ", i)
+    q_table.save_q_table(newfilename)
     
 
 env.close()

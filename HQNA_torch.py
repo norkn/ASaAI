@@ -97,7 +97,7 @@ class DQNAgent:
         self.loss_fn = nn.MSELoss()
         self.input_size = input_size
         self.output_size = output_size
-        self.epsilon = 0.95
+        self.epsilon = epsilon
         self.epsilon_decay = epsilon_decay
         self.min_epsilon = min_epsilon
         
@@ -163,20 +163,20 @@ fine_motor_skills = 1
 #state_size = 1612 
 state_size = 508  # Change this to the actual size
 action_size = 5   # Change this to the actual size
-epsilon = 0.4
+epsilon = 0.9
 #pathname = 'DQN_agent_007'
-pathname = 'DQN_agent_3'
+pathname = 'DQN_agent_008'
 #pathname = 'DQN_agent_3_more_block_vision'
 # Initialize DQNAgent
-agent = DQNAgent(state_size, action_size)
+agent = DQNAgent(state_size, action_size, epsilon)
 
 # Load the saved state
-checkpoint = torch.load(pathname + '.pth')
+#checkpoint = torch.load(pathname + '.pth')
 
 # Load model parameters and optimizer state
-agent.q_network.load_state_dict(checkpoint['model_state_dict'])
-agent.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-agent.set_epsilon(epsilon)
+#agent.q_network.load_state_dict(checkpoint['model_state_dict'])
+#agent.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+#agent.set_epsilon(epsilon)
 
 
 for episode in range(episodes):
@@ -204,14 +204,20 @@ for episode in range(episodes):
 
         gray_vision_sum = sum(vision_list[:len(vision_list)-1])
 
-
+        ongrass = processor.get_vision[len(vision_list)-1]
         #print("Reward:" , reward)
         #print( "VISION" , (gray_vision_sum / 1000) )
         #print( "SPEED" , (processor.get_speed(observation)) )
         
         #print((gray_vision_sum / 10000) * processor.get_speed(observation))
         if (gray_vision_sum / 1000) * processor.get_speed(observation) == 0:
-            reward += -2
+
+            reward = -2
+            if(ongrass == 0):
+                reward = -20
+
+
+
         else:
             reward += (gray_vision_sum / 1000) * processor.get_speed(observation)
 
@@ -231,7 +237,7 @@ for episode in range(episodes):
 
         observation = next_observation
         #print(sum(vision_list[:504]))
-        if terminated or truncated or total_reward < -300:
+        if terminated or truncated or total_reward < -1000:
             break
     # Save the entire agent, including model parameters and optimizer state
     torch.save({
