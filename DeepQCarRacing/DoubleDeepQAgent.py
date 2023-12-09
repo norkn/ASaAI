@@ -19,8 +19,8 @@ class DoubleDeepQAgent:
         init, 
         learning_rate,
         epochs,
-        training_iteration, 
-        weights_transfer_iteration, 
+        batch_size, 
+        training_iterations, 
         gamma, 
         epsilon_decay):
 
@@ -39,14 +39,13 @@ class DoubleDeepQAgent:
         
         self._reset_training_samples()
 
-        self.training_iteration = training_iteration
-        self.weights_transfer_iteration = weights_transfer_iteration
+        self.batch_size = batch_size
+        self.training_iterations = training_iterations
     
         self.gamma = gamma
         self.epsilon = 1.
         self.epsilon_decay = epsilon_decay
         
-        self.numIterations = 1
 
     @staticmethod
     def load(
@@ -55,12 +54,12 @@ class DoubleDeepQAgent:
         action_shape,
         path,
         epochs,
-        training_iteration, 
-        weights_transfer_iteration, 
+        batch_size, 
+        training_iterations, 
         gamma, 
         epsilon_decay):
 
-        model = DoubleDeepQAgent(env, state_shape, action_shape, *[None]*4, epochs, training_iteration, weights_transfer_iteration, gamma, epsilon_decay)
+        model = DoubleDeepQAgent(env, state_shape, action_shape, *[None]*4, epochs, batch_size, training_iterations, gamma, epsilon_decay)
         
         model.qNet = dqn.DeepQNet.load(path, model.epochs)
         model.targetNet = dqn.DeepQNet.load(path, model.epochs)
@@ -81,39 +80,38 @@ class DoubleDeepQAgent:
         else:
             return self.get_action(state)
              
-        
-    def train(self, state, action, reward, next_state):             
+    def record_training_data(self, state, action, reward, next_state):
         self.training_states.append(state)
         self.training_actions.append(action)
         self.training_rewards.append(reward)
-        self.training_next_states.append(next_state)
-        
-        if self.numIterations % self.training_iteration == 0:
+        self.training_next_states.append(next_state)    
+    
+    def train(self):
+        for i in range(self.training_iterations): #training_loops = episodes_training / (training_iteration == batchsize)
+            training_states_batch      = self.training_states     [i * self.batch_size : (i + 1) * self.batch_size]
+            training_actions_batch     = self.training_actions    [i * self.batch_size : (i + 1) * self.batch_size]
+            training_rewards_batch     = self.training_rewards    [i * self.batch_size : (i + 1) * self.batch_size]
+            training_next_states_batch = self.training_next_states[i * self.batch_size : (i + 1) * self.batch_size]
 
             training_targets = []
-
-            for i in range(len(self.training_states)):
-                state = self.training_states[i]
-                action = self.training_actions[i]
-                reward = self.training_rewards[i]
-                next_state = self.training_next_states[i]
+            
+            for k in range(len(training_states_batch)):
+                state      = training_states_batch     [k]
+                action     = training_actions_batch    [k]
+                reward     = training_rewards_batch    [k]
+                next_state = training_next_states_batch[k]
 
                 target_vector = self.get_Q_values(state)[0]
                 target_vector[action] = reward + self.gamma * self.targetNet.run(next_state)[0][action]
 
                 training_targets.append(target_vector)
 
-            training_states = np.array(self.training_states)
+            training_states_batch = np.array(training_states_batch)
             training_targets = np.array(training_targets)
             
-            self.qNet.train(training_states, training_targets)
-
-            self._reset_training_samples()
-            
-        if self.numIterations % self.weights_transfer_iteration == 0:
+            self.qNet.train(training_states_batch, training_targets)
             self.targetNet.set_weights(self.qNet.get_weights())
-            
-        self.numIterations += 1
         
+        self._reset_training_samples()
         
             

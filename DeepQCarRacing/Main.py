@@ -1,11 +1,12 @@
 import gymnasium as gym
-from gymnasium.wrappers import TransformObservation
+
 import pygame
 import tensorflow as tf
 
+import WrappedEnv as we
+
 import DoubleDeepQAgent as ddqa
 import Hyperparameters as hp
-import ObservationProcessor as op
 
 human_action = 0
 interactive = False
@@ -69,8 +70,7 @@ def run(env, ddqAgent, num_iterations, train = True):
         print('state: ', state)
         print('action: ', action, 'reward: ', reward)
     
-        if train:
-            ddqAgent.train(state, action, reward, next_state)
+        ddqAgent.record_training_data(state, action, reward, next_state)
     
         state = next_state
         
@@ -80,7 +80,10 @@ def run(env, ddqAgent, num_iterations, train = True):
     env.close()
     
     if train:
+        print('training')
+        ddqAgent.train()
         ddqAgent.qNet.model.save(hp.FILENAME)
+        print('weights saved')
 
 
 def main(human_input = True, train = False, load_network = True):
@@ -88,7 +91,7 @@ def main(human_input = True, train = False, load_network = True):
     env = gym.make("CarRacing-v2", continuous = False, render_mode = "human") if human_input else\
           gym.make("CarRacing-v2", continuous = False)
 
-    env = TransformObservation(env, op.ObservationProcessor.get_state)
+    env = we.WrappedEnv(env)
 
     state = env.observation_space.sample()
     state_shape = (len(state), )
@@ -99,8 +102,8 @@ def main(human_input = True, train = False, load_network = True):
                                           action_shape,
                                           hp.FILENAME,
                                           hp.EPOCHS,
-                                          hp.TRAINING_ITERATION, 
-                                          hp.WEIGHTS_TRANSFER_ITERATION, 
+                                          hp.BATCH_SIZE, 
+                                          hp.TRAINING_ITERATIONS, 
                                           hp.GAMMA, 
                                           hp.EPSILON_DECAY) if load_network else\
                ddqa.DoubleDeepQAgent(     env, 
@@ -111,12 +114,12 @@ def main(human_input = True, train = False, load_network = True):
                                           tf.keras.initializers.Zeros(), 
                                           hp.LEARNING_RATE,
                                           hp.EPOCHS,
-                                          hp.TRAINING_ITERATION, 
-                                          hp.WEIGHTS_TRANSFER_ITERATION, 
+                                          hp.BATCH_SIZE, 
+                                          hp.TRAINING_ITERATIONS, 
                                           hp.GAMMA, 
                                           hp.EPSILON_DECAY)
 
-    episodes = hp.EPISODES_TRAINING if train else\
-               hp.EPISODES_RUNNING
+    steps = hp.TRAINING_STEPS if train else\
+               hp.RUNNING_STEPS
 
-    run(env, ddqAgent, episodes, train = train) 
+    run(env, ddqAgent, steps, train = train) 
