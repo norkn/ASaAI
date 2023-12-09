@@ -1,4 +1,5 @@
 import gymnasium as gym
+from gymnasium.wrappers import TransformObservation
 import pygame
 import tensorflow as tf
 
@@ -48,11 +49,10 @@ def register_input():
 
 def run(env, ddqAgent, num_iterations, train = True):   
     global quit, interactive, human_action
-    
+
     get_action = ddqAgent.get_action_epsilon_greedy if train else ddqAgent.get_action
 
     state, info = env.reset()
-    state = op.ObservationProcessor.get_state(state)
     
     for i in range(num_iterations):
         
@@ -65,7 +65,6 @@ def run(env, ddqAgent, num_iterations, train = True):
         action = human_action if interactive else get_action(state)
         
         next_state, reward, terminated, truncated, info = env.step(action)
-        next_state = op.ObservationProcessor.get_state(next_state)
         
         print('state: ', state)
         print('action: ', action, 'reward: ', reward)
@@ -77,7 +76,6 @@ def run(env, ddqAgent, num_iterations, train = True):
         
         if terminated or truncated:
             state, info = env.reset()
-            state = op.ObservationProcessor.get_state(state)
 
     env.close()
     
@@ -90,8 +88,9 @@ def main(human_input = True, train = False, load_network = True):
     env = gym.make("CarRacing-v2", continuous = False, render_mode = "human") if human_input else\
           gym.make("CarRacing-v2", continuous = False)
 
+    env = TransformObservation(env, op.ObservationProcessor.get_state)
+
     state = env.observation_space.sample()
-    state = op.ObservationProcessor.get_state(state)
     state_shape = (len(state), )
     action_shape = (env.action_space.n, )
     
