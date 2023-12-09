@@ -4,14 +4,19 @@ import DeepQNet as dqn
 
 import ObservationProcessor as op
 
-#experience replay
-
-TRAINING_ITERATION = 1000
-WEIGHTS_TRANSFER_ITERATION = 1500
-
 class DoubleDeepQAgent:
     
-    def __init__(self, env, layer_sizes, activation_functions, init, learning_rate, gamma, epsilon_decay):
+    def __init__(self, 
+        env, 
+        layer_sizes, 
+        activation_functions, 
+        init, 
+        learning_rate,
+        epochs,
+        training_iteration, 
+        weights_transfer_iteration, 
+        gamma, 
+        epsilon_decay):
 
         self.env = env
         
@@ -19,29 +24,42 @@ class DoubleDeepQAgent:
         self.state_shape = (len(op.ObservationProcessor.get_state(state)), )
         
         self.action_shape = (env.action_space.n, )
-        
-        self.gamma = gamma
-        self.epsilon = 1.
-        self.epsilon_decay = epsilon_decay
-        
-        self.numIterations = 1
+
+        self.epochs = epochs      
         
         if layer_sizes == None:
             self.qNet = None
             self.targetNet = None
         else:
-            self.qNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate)
-            self.targetNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate)
+            self.qNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate, self.epochs)
+            self.targetNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate, self.epochs)
         
         self.training_states= []
         self.training_qValues = []
+
+        self.training_iteration = training_iteration
+        self.weights_transfer_iteration = weights_transfer_iteration
     
-    @staticmethod
-    def load(env, path, gamma, epsilon_decay):
-        model = DoubleDeepQAgent(env, *[None]*4, gamma, epsilon_decay)
+        self.gamma = gamma
+        self.epsilon = 1.
+        self.epsilon_decay = epsilon_decay
         
-        model.qNet = dqn.DeepQNet.load(path)
-        model.targetNet = dqn.DeepQNet.load(path)
+        self.numIterations = 1
+
+    @staticmethod
+    def load(
+        env, 
+        path,
+        epochs,
+        training_iteration, 
+        weights_transfer_iteration, 
+        gamma, 
+        epsilon_decay):
+
+        model = DoubleDeepQAgent(env, *[None]*4, epochs, training_iteration, weights_transfer_iteration, gamma, epsilon_decay)
+        
+        model.qNet = dqn.DeepQNet.load(path, model.epochs)
+        model.targetNet = dqn.DeepQNet.load(path, model.epochs)
 
         return model
     
@@ -73,7 +91,7 @@ class DoubleDeepQAgent:
         self.training_states.append(processed_state)
         self.training_qValues.append(target_vector)
         
-        if self.numIterations % TRAINING_ITERATION == 0:
+        if self.numIterations % self.training_iteration == 0:
             training_states = np.array(self.training_states)
             training_qValues = np.array(self.training_qValues)
             
@@ -81,7 +99,7 @@ class DoubleDeepQAgent:
             self.training_states = []
             self.training_qValues = []
             
-        if self.numIterations % WEIGHTS_TRANSFER_ITERATION == 0:
+        if self.numIterations % self.weights_transfer_iteration == 0:
             self.targetNet.set_weights(self.qNet.get_weights())
             
         self.numIterations += 1

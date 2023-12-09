@@ -87,7 +87,25 @@ def main(human_input = True, train = False, load_network = True):
     env = gym.make("CarRacing-v2", continuous = False, render_mode = "human") if human_input else\
           gym.make("CarRacing-v2", continuous = False)
     
-    ddqAgent = ddqa.DoubleDeepQAgent.load(env, hp.FILENAME, hp.GAMMA, hp.EPSILON_DECAY) if load_network else\
-               ddqa.DoubleDeepQAgent(env, hp.LAYER_SIZES, hp.LAYER_ACTIVATIONS, tf.keras.initializers.Zeros(), hp.LEARNING_RATE, hp.GAMMA, hp.EPSILON_DECAY)
-        
-    run(env, ddqAgent, hp.ITERATIONS_RUNNING, train = train) 
+    ddqAgent = ddqa.DoubleDeepQAgent.load(env,
+                                          hp.FILENAME,
+                                          hp.EPOCHS,
+                                          hp.TRAINING_ITERATION, 
+                                          hp.WEIGHTS_TRANSFER_ITERATION, 
+                                          hp.GAMMA, 
+                                          hp.EPSILON_DECAY) if load_network else\
+               ddqa.DoubleDeepQAgent(     env, 
+                                          hp.LAYER_SIZES, 
+                                          hp.LAYER_ACTIVATIONS, 
+                                          tf.keras.initializers.Zeros(), 
+                                          hp.LEARNING_RATE,
+                                          hp.EPOCHS,
+                                          hp.TRAINING_ITERATION, 
+                                          hp.WEIGHTS_TRANSFER_ITERATION, 
+                                          hp.GAMMA, 
+                                          hp.EPSILON_DECAY)
+
+    episodes = hp.EPISODES_TRAINING if train else\
+               hp.EPISODES_RUNNING
+
+    run(env, ddqAgent, episodes, train = train) 
