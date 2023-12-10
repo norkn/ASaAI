@@ -92,9 +92,9 @@ def main(human_input = True, train = False, load_network = True):
           gym.make("CarRacing-v2", continuous = False)
 
     env = we.WrappedEnv(env)
-
-    state = env.observation_space.sample()
-    state_shape = (len(state), )
+    
+    state_shape = env.observation_space.shape
+    
     action_shape = (env.action_space.n, )
     
     ddqAgent = ddqa.DoubleDeepQAgent.load(env,
