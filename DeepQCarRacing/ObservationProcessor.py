@@ -9,11 +9,8 @@ class ObservationProcessor:
         return np.sum(thresholded_state)
 
     @staticmethod
-    def _is_on_road(vision_array):
-        for i in vision_array[0]:
-            if i[0] != i[1] or i[1] != i[2]:
-                return 0
-        return 1
+    def _is_on_road(pixel):
+        return int(pixel[0] == pixel[1] and pixel[1] == pixel[2])
 
     @staticmethod
     def _get_value_from_pixels(observation, dX, dY):
@@ -36,16 +33,16 @@ class ObservationProcessor:
 
     @staticmethod
     def get_vision(observation):
-        near_vision_left = observation[66:67, 44:45]       
-        near_vision_right = observation[66:67, 51:52]
+        near_vision_left = observation[66][44]       
+        near_vision_right = observation[66][51]
 
-        far_vision_left = observation[46:47, 44:45]
-        far_vision_right = observation[46:47, 51:52]
+        far_vision_left = observation[46][44]
+        far_vision_right = observation[46][51]
 
-        vision_stripe = observation[50:51, 38:58]
+        vision_stripe = observation[50][48]
 
-        on_grass_left = observation[70:71, 46:47]
-        on_grass_right = observation[70:71, 49:50]
+        on_grass_left = observation[70][46]
+        on_grass_right = observation[70][49]
 
         near_vision_left = ObservationProcessor._is_on_road(near_vision_left)
         near_vision_right = ObservationProcessor._is_on_road(near_vision_right)
@@ -59,8 +56,14 @@ class ObservationProcessor:
         on_grass_right = 1 - ObservationProcessor._is_on_road(on_grass_right)
 
         is_on_grass = int(on_grass_left == 1 and on_grass_right == 1)
+    
+        vision_array = []
+        for x in range(int(len(observation[0]) / 12)):
+            for y in range(int(len(observation) / 12)):
+                pixel = ObservationProcessor()._is_on_road(observation[y * 12][x * 12])
+                vision_array.append(pixel)
 
-        return [near_vision_left, near_vision_right, far_vision_left, far_vision_right, vision_stripe, is_on_grass]
+        return [near_vision_left, near_vision_right, far_vision_left, far_vision_right, vision_stripe, is_on_grass] + vision_array
 
     @staticmethod
     def get_state(observation):

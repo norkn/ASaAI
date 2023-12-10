@@ -9,7 +9,11 @@ import ObservationProcessor as op
 class WrappedEnv(ObservationWrapper):
     def __init__(self, env):
         super().__init__(env)
-        self.observation_space = Box(shape=(9,), low=0, high=np.inf)
+        state = env.observation_space.sample()
+        state = op.ObservationProcessor.get_state(state)
+        state_shape = (len(state), )
+        
+        self.observation_space = Box(shape=state_shape, low=0, high=np.inf)
 
     def observation(self, obs):
         return op.ObservationProcessor.get_state(obs)
