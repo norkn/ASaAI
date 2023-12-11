@@ -81,7 +81,7 @@ def run(env, ddqAgent, num_iterations, train = True):
     
     if train:
         print('training')
-        ddqAgent.process_training_data()
+        ddqAgent.process_and_save_training_data()
         ddqAgent.qNet.model.save(hp.FILENAME)
         print('weights saved')
 

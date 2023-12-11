@@ -1,4 +1,5 @@
 import numpy as np
+from npy_append_array import NpyAppendArray
 
 import DeepQNet as dqn
 
@@ -88,7 +89,7 @@ class DoubleDeepQAgent:
         self.training_next_states.append(next_state)
         self.training_done.append(done)
     
-    def process_training_data(self):
+    def process_and_save_training_data(self):
         training_target_vectors = []
 
         q_value = 0
@@ -112,7 +113,12 @@ class DoubleDeepQAgent:
         training_states = np.array(self.training_states)
         training_target_vectors = np.array(training_target_vectors)
         
-        self.qNet.train(training_states, training_target_vectors)
+        NpyAppendArray('training_states.npy', delete_if_exists = False).append(training_states)
+        NpyAppendArray('training_target_vectors.npy', delete_if_exists = False).append(training_target_vectors)
+                
+        # loaded_training_states = np.load('training_states.npy', mmap_mode = 'r')
+        # loaded_target_vectors = np.load('training_target_vectors.npy', mmap_mode = 'r')
+        #self.qNet.train(training_states, training_target_vectors)
         
         self._reset_training_samples()
         
