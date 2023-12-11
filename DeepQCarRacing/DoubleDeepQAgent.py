@@ -9,6 +9,7 @@ class DoubleDeepQAgent:
         self.training_actions = []
         self.training_rewards = []
         self.training_next_states = []
+        self.training_done = []
     
     def __init__(self, 
         env,
@@ -80,37 +81,38 @@ class DoubleDeepQAgent:
         else:
             return self.get_action(state)
              
-    def record_training_data(self, state, action, reward, next_state):
+    def record_training_data(self, state, action, reward, next_state, done):
         self.training_states.append(state)
         self.training_actions.append(action)
         self.training_rewards.append(reward)
-        self.training_next_states.append(next_state)    
+        self.training_next_states.append(next_state)
+        self.training_done.append(done)
     
-    def train(self):
-        for i in range(self.training_iterations): #training_loops = episodes_training / (training_iteration == batchsize)
-            training_states_batch      = self.training_states     [i * self.batch_size : (i + 1) * self.batch_size]
-            training_actions_batch     = self.training_actions    [i * self.batch_size : (i + 1) * self.batch_size]
-            training_rewards_batch     = self.training_rewards    [i * self.batch_size : (i + 1) * self.batch_size]
-            training_next_states_batch = self.training_next_states[i * self.batch_size : (i + 1) * self.batch_size]
+    def process_training_data(self):
+        training_target_vectors = []
 
-            training_targets = []
-            
-            for k in range(len(training_states_batch)):
-                state      = training_states_batch     [k]
-                action     = training_actions_batch    [k]
-                reward     = training_rewards_batch    [k]
-                next_state = training_next_states_batch[k]
+        q_value = 0
+        
+        for i in reversed(range(len(self.training_states))):
+            state      = self.training_states     [i]
+            action     = self.training_actions    [i]
+            reward     = self.training_rewards    [i]
+            done       = self.training_done       [i]
 
-                target_vector = self.get_Q_values(state)[0]
-                target_vector[action] = reward + self.gamma * self.targetNet.run(next_state)[0][action]
+            if done:
+                q_value = 0
 
-                training_targets.append(target_vector)
+            q_value = reward + self.gamma * q_value
 
-            training_states_batch = np.array(training_states_batch)
-            training_targets = np.array(training_targets)
-            
-            self.qNet.train(training_states_batch, training_targets)
-            self.targetNet.set_weights(self.qNet.get_weights())
+            target_vector = self.get_Q_values(state)
+            target_vector[action] = q_value
+
+            training_target_vectors.append(target_vector)
+
+        training_states = np.array(self.training_states)
+        training_target_vectors = np.array(training_target_vectors)
+        
+        self.qNet.train(training_states, training_target_vectors)
         
         self._reset_training_samples()
         

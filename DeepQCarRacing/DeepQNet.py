@@ -56,7 +56,7 @@ class DeepQNet:
         
     def run(self, state):
         state = np.array(state)
-        return self.model.predict(state.reshape(1, *state.shape)) ##################
+        return self.model.predict(state.reshape(1, *state.shape))[0]
 
     
     def train(self, states, qValues):        
