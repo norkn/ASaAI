@@ -3,6 +3,9 @@ from npy_append_array import NpyAppendArray
 
 import DeepQNet as dqn
 
+STATES_FILENAME = 'Savefiles/training_states.npy'
+Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
+
 class DoubleDeepQAgent:
     
     def _reset_training_samples(self):
@@ -113,12 +116,53 @@ class DoubleDeepQAgent:
         training_states = np.array(self.training_states)
         training_target_vectors = np.array(training_target_vectors)
         
-        NpyAppendArray('training_states.npy', delete_if_exists = False).append(training_states)
-        NpyAppendArray('training_target_vectors.npy', delete_if_exists = False).append(training_target_vectors)
-                
-        # loaded_training_states = np.load('training_states.npy', mmap_mode = 'r')
-        # loaded_target_vectors = np.load('training_target_vectors.npy', mmap_mode = 'r')
-        #self.qNet.train(training_states, training_target_vectors)
+        NpyAppendArray(STATES_FILENAME, delete_if_exists = False).append(training_states)
+        NpyAppendArray(Q_VALUES_FILENAME, delete_if_exists = False).append(training_target_vectors)
+        
+        self._reset_training_samples()
+
+    def train_on_saved_data(self):
+        training_states = np.load(STATES_FILENAME, mmap_mode="r")
+        q_values_states = np.load(Q_VALUES_FILENAME, mmap_mode="r")
+        
+        print(len(training_states))
+        print(len(q_values_states))
+
+        for i in range(self.training_iterations):
+            if (i + 1) * self.batch_size > len(training_states): break
+            
+            training_states_batch = training_states[i * self.batch_size : (i + 1) * self.batch_size]
+            training_targets      = q_values_states[i * self.batch_size : (i + 1) * self.batch_size]
+            
+            self.qNet.train(training_states_batch, training_targets)
+        
+        self._reset_training_samples()
+
+    def train_on_new_data(self):
+        for i in range(self.training_iterations): #training_loops = episodes_training / (training_iteration == batchsize)
+            training_states_batch      = self.training_states     [i * self.batch_size : (i + 1) * self.batch_size]
+            training_actions_batch     = self.training_actions    [i * self.batch_size : (i + 1) * self.batch_size]
+            training_rewards_batch     = self.training_rewards    [i * self.batch_size : (i + 1) * self.batch_size]
+            training_next_states_batch = self.training_next_states[i * self.batch_size : (i + 1) * self.batch_size]
+
+            training_targets = []
+            
+            for k in range(len(training_states_batch)):
+                state      = training_states_batch     [k]
+                action     = training_actions_batch    [k]
+                reward     = training_rewards_batch    [k]
+                next_state = training_next_states_batch[k]
+
+                target_vector = self.get_Q_values(state)
+                target_vector[action] = reward + self.gamma * self.targetNet.run(next_state)[action]
+
+                training_targets.append(target_vector)
+
+            training_states_batch = np.array(training_states_batch)
+            training_targets = np.array(training_targets)
+            
+            self.qNet.train(training_states_batch, training_targets)
+            self.targetNet.set_weights(self.qNet.get_weights())
         
         self._reset_training_samples()
         
