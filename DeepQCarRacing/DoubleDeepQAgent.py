@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import numpy as np
 from npy_append_array import NpyAppendArray
 
@@ -93,7 +95,7 @@ class DoubleDeepQAgent:
         self.training_done.append(done)
     
     def process_and_save_training_data(self):
-        training_target_vectors = []
+        q_table = defaultdict(lambda: np.zeros(5))
 
         q_value = 0
         
@@ -107,11 +109,12 @@ class DoubleDeepQAgent:
                 q_value = 0
 
             q_value = reward + self.gamma * q_value
-
-            target_vector = self.get_Q_values(state)
-            target_vector[action] = q_value
-
-            training_target_vectors.append(target_vector)
+            
+            q_table[tuple(state)][action] = 0.5 * (q_table[tuple(state)][action] + q_value)
+            
+        training_target_vectors = []
+        for i in range(len(self.training_states)):
+            training_target_vectors.append(np.array(q_table[ tuple(self.training_states[i]) ] ))
 
         training_states = np.array(self.training_states)
         training_target_vectors = np.array(training_target_vectors)

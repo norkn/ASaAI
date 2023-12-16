@@ -22,7 +22,8 @@ class DeepQNet:
         
         model.add(keras.layers.Dense(action_shape[0], activation = activation_functions[-1], kernel_initializer = init))
         
-        model.compile(loss = tf.keras.losses.Huber(), optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate))
+        model.compile(loss = tf.keras.losses.MeanSquaredError(), optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate))
+        #reduction = losses_utils.ReductionV2.AUTO
         
         return model
     
@@ -63,9 +64,9 @@ class DeepQNet:
         history = self.model.fit(
             states,
             qValues,
-            batch_size = len(states),
+            batch_size = int(len(states) / 100),
             epochs = self.epochs,
-            verbose = 0
+            #verbose = 0
         )
         
         return history

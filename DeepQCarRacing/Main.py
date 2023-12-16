@@ -111,7 +111,7 @@ def main(human_input = True, train = False, load_network = True):
                                           action_shape,
                                           hp.LAYER_SIZES, 
                                           hp.LAYER_ACTIVATIONS, 
-                                          tf.keras.initializers.Zeros(), 
+                                          tf.keras.initializers.RandomNormal(stddev=0.1), 
                                           hp.LEARNING_RATE,
                                           hp.EPOCHS,
                                           hp.BATCH_SIZE, 

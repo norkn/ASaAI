@@ -19,7 +19,7 @@ ddqAgent = ddqa.DoubleDeepQAgent(env,
                                  action_shape,
                                  hp.LAYER_SIZES, 
                                  hp.LAYER_ACTIVATIONS, 
-                                 tf.keras.initializers.Zeros(), 
+                                 tf.keras.initializers.RandomNormal(stddev=0.1), 
                                  hp.LEARNING_RATE,
                                  hp.EPOCHS,
                                  hp.BATCH_SIZE, 
@@ -27,15 +27,15 @@ ddqAgent = ddqa.DoubleDeepQAgent(env,
                                  hp.GAMMA, 
                                  hp.EPSILON_DECAY)
 
-ddqa.DoubleDeepQAgent.load(env,
-                           state_shape,
-                           action_shape,
-                           hp.FILENAME,
-                           hp.EPOCHS,
-                           hp.BATCH_SIZE, 
-                           hp.TRAINING_ITERATIONS, 
-                           hp.GAMMA, 
-                           hp.EPSILON_DECAY)
+# ddqAgent = ddqa.DoubleDeepQAgent.load(env,
+                        #    state_shape,
+                        #    action_shape,
+                        #    hp.FILENAME,
+                        #    hp.EPOCHS,
+                        #    hp.BATCH_SIZE, 
+                        #    hp.TRAINING_ITERATIONS, 
+                        #    hp.GAMMA, 
+                        #    hp.EPSILON_DECAY)
 
 ddqAgent.train_on_saved_data()
 

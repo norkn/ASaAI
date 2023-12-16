@@ -10,7 +10,7 @@ class ObservationProcessor:
 
     @staticmethod
     def _is_on_road(pixel):
-        return int(pixel[0] == pixel[1] and pixel[1] == pixel[2])
+        return int(pixel[0] == pixel[1] and pixel[1] == pixel[2] and pixel[0] > 0)
 
     @staticmethod
     def _get_value_from_pixels(observation, dX, dY):
@@ -57,13 +57,14 @@ class ObservationProcessor:
 
         is_on_grass = int(on_grass_left == 1 and on_grass_right == 1)
     
-        vision_array = []
-        for x in range(int(len(observation[0]) / 12)):
-            for y in range(int(len(observation) / 12)):
-                pixel = ObservationProcessor()._is_on_road(observation[y * 12][x * 12])
-                vision_array.append(pixel)
+        # vision_array = []
+        # vision_step = 6
+        # for x in range(int(len(observation[0]) / vision_step)):
+            # for y in range(int(len(observation) / vision_step)):
+                # pixel = ObservationProcessor()._is_on_road(observation[y * vision_step][x * vision_step])
+                # vision_array.append(pixel)
 
-        return [near_vision_left, near_vision_right, far_vision_left, far_vision_right, vision_stripe, is_on_grass] + vision_array
+        return [near_vision_left, near_vision_right, far_vision_left, far_vision_right, vision_stripe, is_on_grass]# + vision_array
 
     @staticmethod
     def get_state(observation):
