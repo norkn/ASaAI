@@ -61,8 +61,11 @@ def main():
                                           hp.LAYER_ACTIVATIONS, 
                                           tf.keras.initializers.Zeros(), 
                                           hp.LEARNING_RATE,
+                                          hp.LOSS,
+                                          hp.OPTIMIZER,
+                                          hp.NUM_BATCHES,
                                           hp.EPOCHS,
-                                          hp.BATCH_SIZE, 
+                                          hp.SAMPLE_SIZE, 
                                           hp.TRAINING_ITERATIONS, 
                                           hp.GAMMA, 
                                           hp.EPSILON_DECAY)

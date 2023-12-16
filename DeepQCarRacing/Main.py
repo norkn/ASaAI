@@ -93,16 +93,16 @@ def main(human_input = True, train = False, load_network = True):
 
     env = we.WrappedEnv(env)
     
-    state_shape = env.observation_space.shape
-    
+    state_shape = env.observation_space.shape    
     action_shape = (env.action_space.n, )
     
     ddqAgent = ddqa.DoubleDeepQAgent.load(env,
                                           state_shape,
                                           action_shape,
                                           hp.FILENAME,
+                                          hp.NUM_BATCHES,
                                           hp.EPOCHS,
-                                          hp.BATCH_SIZE, 
+                                          hp.SAMPLE_SIZE, 
                                           hp.TRAINING_ITERATIONS, 
                                           hp.GAMMA, 
                                           hp.EPSILON_DECAY) if load_network else\
@@ -113,8 +113,11 @@ def main(human_input = True, train = False, load_network = True):
                                           hp.LAYER_ACTIVATIONS, 
                                           tf.keras.initializers.RandomNormal(stddev=0.1), 
                                           hp.LEARNING_RATE,
+                                          hp.LOSS,
+                                          hp.OPTIMIZER,
+                                          hp.NUM_BATCHES,
                                           hp.EPOCHS,
-                                          hp.BATCH_SIZE, 
+                                          hp.SAMPLE_SIZE, 
                                           hp.TRAINING_ITERATIONS, 
                                           hp.GAMMA, 
                                           hp.EPSILON_DECAY)

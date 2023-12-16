@@ -11,7 +11,8 @@ class DeepQNet:
                     activation_functions, 
                     init, 
                     learning_rate,
-                    epochs):
+                    loss,
+                    optimizer):
         
         model = keras.Sequential()
         
@@ -22,8 +23,7 @@ class DeepQNet:
         
         model.add(keras.layers.Dense(action_shape[0], activation = activation_functions[-1], kernel_initializer = init))
         
-        model.compile(loss = tf.keras.losses.MeanSquaredError(), optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate))
-        #reduction = losses_utils.ReductionV2.AUTO
+        model.compile(loss = loss, optimizer = optimizer(learning_rate = learning_rate))
         
         return model
     
@@ -34,18 +34,29 @@ class DeepQNet:
                  activation_functions,
                  init, 
                  learning_rate,
+                 loss,
+                 optimizer,
+                 num_batches,
                  epochs):
 
+        self.num_batches = num_batches
         self.epochs = epochs
 
         if state_shape == None:
             self.model = None
         else:
-            self.model = DeepQNet.build_model(state_shape, action_shape, layer_sizes, activation_functions, init, learning_rate, self.epochs)
+            self.model = DeepQNet.build_model(state_shape,
+                                              action_shape,
+                                              layer_sizes,
+                                              activation_functions,
+                                              init,
+                                              learning_rate,
+                                              loss,
+                                              optimizer)
 
     @staticmethod    
-    def load(path, epochs):
-        dqn = DeepQNet(*[None]*6, epochs)
+    def load(path, num_batches, epochs):
+        dqn = DeepQNet(*[None]*8, num_batches, epochs)
         dqn.model = keras.models.load_model(path)
         return dqn
         
@@ -64,7 +75,7 @@ class DeepQNet:
         history = self.model.fit(
             states,
             qValues,
-            batch_size = int(len(states) / 100),
+            batch_size = int(len(states) / self.num_batches),
             epochs = self.epochs,
             #verbose = 0
         )

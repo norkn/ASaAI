@@ -7,15 +7,16 @@ import DeepQNet as dqn
 
 STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
+q_table_lerp_speed = 0.5
 
 class DoubleDeepQAgent:
     
-    def _reset_training_samples(self):
-        self.training_states = []
-        self.training_actions = []
-        self.training_rewards = []
+    def _reset_training_data(self):
+        self.training_states      = []
+        self.training_actions     = []
+        self.training_rewards     = []
         self.training_next_states = []
-        self.training_done = []
+        self.training_done        = []
     
     def __init__(self, 
         env,
@@ -25,28 +26,29 @@ class DoubleDeepQAgent:
         activation_functions, 
         init, 
         learning_rate,
+        loss,
+        optimizer,
+        num_batches,
         epochs,
-        batch_size, 
+        sample_size, 
         training_iterations, 
         gamma, 
         epsilon_decay):
 
         self.env = env
         self.state_shape = state_shape
-        self.action_shape = action_shape
-
-        self.epochs = epochs      
+        self.action_shape = action_shape     
         
         if layer_sizes == None:
             self.qNet = None
             self.targetNet = None
         else:
-            self.qNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate, self.epochs)
-            self.targetNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate, self.epochs)
+            self.qNet      = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate, loss, optimizer, num_batches, epochs)
+            self.targetNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate, loss, optimizer, num_batches, epochs)
         
-        self._reset_training_samples()
+        self._reset_training_data()
 
-        self.batch_size = batch_size
+        self.sample_size = sample_size
         self.training_iterations = training_iterations
     
         self.gamma = gamma
@@ -60,16 +62,17 @@ class DoubleDeepQAgent:
         state_shape,
         action_shape,
         path,
+        num_batches,
         epochs,
-        batch_size, 
+        sample_size, 
         training_iterations, 
         gamma, 
         epsilon_decay):
 
-        model = DoubleDeepQAgent(env, state_shape, action_shape, *[None]*4, epochs, batch_size, training_iterations, gamma, epsilon_decay)
+        model = DoubleDeepQAgent(env, state_shape, action_shape, *[None]*6, num_batches, epochs, sample_size, training_iterations, gamma, epsilon_decay)
         
-        model.qNet = dqn.DeepQNet.load(path, model.epochs)
-        model.targetNet = dqn.DeepQNet.load(path, model.epochs)
+        model.qNet      = dqn.DeepQNet.load(path, num_batches, epochs)
+        model.targetNet = dqn.DeepQNet.load(path, num_batches, epochs)
 
         return model
     
@@ -88,29 +91,29 @@ class DoubleDeepQAgent:
             return self.get_action(state)
              
     def record_training_data(self, state, action, reward, next_state, done):
-        self.training_states.append(state)
-        self.training_actions.append(action)
-        self.training_rewards.append(reward)
+        self.training_states     .append(state)
+        self.training_actions    .append(action)
+        self.training_rewards    .append(reward)
         self.training_next_states.append(next_state)
-        self.training_done.append(done)
+        self.training_done       .append(done)
     
     def process_and_save_training_data(self):
-        q_table = defaultdict(lambda: np.zeros(5))
+        q_table = defaultdict(lambda: np.zeros(self.action_shape[0]))
 
         q_value = 0
         
         for i in reversed(range(len(self.training_states))):
-            state      = self.training_states     [i]
-            action     = self.training_actions    [i]
-            reward     = self.training_rewards    [i]
-            done       = self.training_done       [i]
+            state      = self.training_states [i]
+            action     = self.training_actions[i]
+            reward     = self.training_rewards[i]
+            done       = self.training_done   [i]
 
             if done:
                 q_value = 0
 
             q_value = reward + self.gamma * q_value
             
-            q_table[tuple(state)][action] = 0.5 * (q_table[tuple(state)][action] + q_value)
+            q_table[tuple(state)][action] = (1 - q_table_lerp_speed) * q_table[tuple(state)][action] + (q_table_lerp_speed) * q_value
             
         training_target_vectors = []
         for i in range(len(self.training_states)):
@@ -119,34 +122,31 @@ class DoubleDeepQAgent:
         training_states = np.array(self.training_states)
         training_target_vectors = np.array(training_target_vectors)
         
-        NpyAppendArray(STATES_FILENAME, delete_if_exists = False).append(training_states)
+        NpyAppendArray(STATES_FILENAME,   delete_if_exists = False).append(training_states)
         NpyAppendArray(Q_VALUES_FILENAME, delete_if_exists = False).append(training_target_vectors)
         
-        self._reset_training_samples()
+        self._reset_training_data()
 
     def train_on_saved_data(self):
-        training_states = np.load(STATES_FILENAME, mmap_mode="r")
-        q_values_states = np.load(Q_VALUES_FILENAME, mmap_mode="r")
-        
-        print(len(training_states))
-        print(len(q_values_states))
+        training_states   = np.load(STATES_FILENAME,   mmap_mode="r")
+        training_q_values = np.load(Q_VALUES_FILENAME, mmap_mode="r")
 
         for i in range(self.training_iterations):
-            if (i + 1) * self.batch_size > len(training_states): break
+            if (i + 1) * self.sample_size > len(training_states): break
             
-            training_states_batch = training_states[i * self.batch_size : (i + 1) * self.batch_size]
-            training_targets      = q_values_states[i * self.batch_size : (i + 1) * self.batch_size]
+            training_states_sample   = training_states  [i * self.sample_size : (i + 1) * self.sample_size]
+            training_q_values_sample = training_q_values[i * self.sample_size : (i + 1) * self.sample_size]
             
-            self.qNet.train(training_states_batch, training_targets)
+            self.qNet.train(training_states_sample, training_q_values_sample)
         
-        self._reset_training_samples()
+        self._reset_training_data()
 
     def train_on_new_data(self):
-        for i in range(self.training_iterations): #training_loops = episodes_training / (training_iteration == batchsize)
-            training_states_batch      = self.training_states     [i * self.batch_size : (i + 1) * self.batch_size]
-            training_actions_batch     = self.training_actions    [i * self.batch_size : (i + 1) * self.batch_size]
-            training_rewards_batch     = self.training_rewards    [i * self.batch_size : (i + 1) * self.batch_size]
-            training_next_states_batch = self.training_next_states[i * self.batch_size : (i + 1) * self.batch_size]
+        for i in range(self.training_iterations):
+            training_states_batch      = self.training_states     [i * self.sample_size : (i + 1) * self.sample_size]
+            training_actions_batch     = self.training_actions    [i * self.sample_size : (i + 1) * self.sample_size]
+            training_rewards_batch     = self.training_rewards    [i * self.sample_size : (i + 1) * self.sample_size]
+            training_next_states_batch = self.training_next_states[i * self.sample_size : (i + 1) * self.sample_size]
 
             training_targets = []
             
@@ -167,6 +167,6 @@ class DoubleDeepQAgent:
             self.qNet.train(training_states_batch, training_targets)
             self.targetNet.set_weights(self.qNet.get_weights())
         
-        self._reset_training_samples()
+        self._reset_training_data()
         
             
