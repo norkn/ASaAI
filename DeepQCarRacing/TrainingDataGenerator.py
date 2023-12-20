@@ -54,21 +54,21 @@ def main():
     
     action_shape = (env.action_space.n, )
     
-    ddqAgent = ddqa.DoubleDeepQAgent(     env, 
-                                          state_shape,
-                                          action_shape,
-                                          hp.LAYER_SIZES, 
-                                          hp.LAYER_ACTIVATIONS, 
-                                          tf.keras.initializers.Zeros(), 
-                                          hp.LEARNING_RATE,
-                                          hp.LOSS,
-                                          hp.OPTIMIZER,
-                                          hp.NUM_BATCHES,
-                                          hp.EPOCHS,
-                                          hp.SAMPLE_SIZE, 
-                                          hp.TRAINING_ITERATIONS, 
-                                          hp.GAMMA, 
-                                          hp.EPSILON_DECAY)
+    ddqAgent = ddqa.DoubleDeepQAgent(env, 
+                                     state_shape,
+                                     action_shape,
+                                     hp.LAYER_SIZES, 
+                                     hp.LAYER_ACTIVATIONS, 
+                                     tf.keras.initializers.Zeros(), 
+                                     hp.LEARNING_RATE,
+                                     hp.LOSS,
+                                     hp.OPTIMIZER,
+                                     hp.NUM_BATCHES,
+                                     hp.EPOCHS,
+                                     hp.SAMPLE_SIZE, 
+                                     hp.TRAINING_ITERATIONS, 
+                                     hp.GAMMA, 
+                                     hp.EPSILON_DECAY)
 
     steps = hp.TRAINING_STEPS
 

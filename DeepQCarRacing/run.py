@@ -1,3 +1,3 @@
 import Main
 
-Main.main(human_input=0,train=1,load_network=1)
+Main.main(human_input=1,train=0,load_network=1)

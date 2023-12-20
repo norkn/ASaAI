@@ -103,10 +103,10 @@ class DoubleDeepQAgent:
         q_value = 0
         
         for i in reversed(range(len(self.training_states))):
-            state      = self.training_states [i]
-            action     = self.training_actions[i]
-            reward     = self.training_rewards[i]
-            done       = self.training_done   [i]
+            state  = self.training_states [i]
+            action = self.training_actions[i]
+            reward = self.training_rewards[i]
+            done   = self.training_done   [i]
 
             if done:
                 q_value = 0
