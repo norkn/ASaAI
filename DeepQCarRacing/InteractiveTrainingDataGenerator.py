@@ -1,5 +1,6 @@
 import gymnasium as gym
 
+import pygame
 import tensorflow as tf
 
 import WrappedEnv as we
@@ -9,20 +10,34 @@ import Hyperparameters as hp
 
 import Main
 
-def scripted_policy(state):
-    action = 0
-    if state[0] < 3: action = 3
+def register_input(state):
 
-    #far vision
-    if state[5] == 0: action = 1 #turn right
-    if state[6] == 0: action = 2 #turn left
+    for event in pygame.event.get():
 
-    #near vision
-    if state[3] == 0: action = 1 #turn right
-    if state[4] == 0: action = 2 #turn left
-    if state[0] == 0: action = 3
+        if event.type == pygame.KEYDOWN:
+            
+            if event.key == pygame.K_LEFT:
+                register_input.action = 2
+            if event.key == pygame.K_RIGHT:
+                register_input.action = 1
+            if event.key == pygame.K_UP:
+                register_input.action = 3
+            if event.key == pygame.K_DOWN:
+                register_input.action = 4
 
-    return action
+        if event.type == pygame.KEYUP:
+
+            if event.key == pygame.K_LEFT:
+                register_input.action = 0
+            if event.key == pygame.K_RIGHT:
+                register_input.action = 0
+            if event.key == pygame.K_UP:
+                register_input.action = 0
+            if event.key == pygame.K_DOWN:
+                register_input.action = 0
+
+    return register_input.action
+register_input.action = 0
 
 
 def run():
@@ -51,7 +66,7 @@ def run():
 
     steps = hp.TRAINING_STEPS
 
-    Main.main(env, ddqAgent, steps, scripted_policy)
+    Main.main(env, ddqAgent, steps, register_input)
     
     
 run()
