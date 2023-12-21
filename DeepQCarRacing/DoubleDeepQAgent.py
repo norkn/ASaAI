@@ -164,8 +164,8 @@ class DoubleDeepQAgent:
             training_states_batch = np.array(training_states_batch)
             training_targets = np.array(training_targets)
             
-            self.qNet.train(training_states_batch, training_targets)
             self.targetNet.set_weights(self.qNet.get_weights())
+            self.qNet.train(training_states_batch, training_targets)
         
         self._reset_training_data()
         

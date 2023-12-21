@@ -1,7 +1,5 @@
 import gymnasium as gym
 
-import tensorflow as tf
-
 import WrappedEnv as we
 
 import DoubleDeepQAgent as ddqa
