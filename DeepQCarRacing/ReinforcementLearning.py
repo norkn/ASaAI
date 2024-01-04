@@ -16,7 +16,9 @@ def main(env, ddqAgent, num_iterations, get_action):
 
         ddqAgent.record_training_data(state, action, reward, next_state, terminated or truncated)
 
-        if i % hp.SAMPLE_SIZE == 0:
+        print(f"action {action}")
+
+        if (i + 1) % hp.SAMPLE_SIZE == 0:
             ddqAgent.train_on_new_data()
     
         state = next_state
@@ -50,7 +52,7 @@ def run():
 
     steps = hp.TRAINING_STEPS
 
-    main(env, ddqAgent, steps, ddqAgent.get_action_epsilon_greedy)
+    main(env, ddqAgent, steps, ddqAgent.get_action_by_distribution)
     
     
 run()

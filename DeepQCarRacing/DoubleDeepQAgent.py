@@ -8,6 +8,7 @@ import DeepQNet as dqn
 STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
 q_table_lerp_speed = 0.5
+min_probability = 0.005
 
 class DoubleDeepQAgent:
     
@@ -89,6 +90,25 @@ class DoubleDeepQAgent:
             return self.env.action_space.sample()
         else:
             return self.get_action(state)
+    
+    def get_action_by_distribution(self, state):
+        q_values = self.get_Q_values(state)
+
+        min_element_index = np.argmin(q_values)
+
+        shifted_q_values = q_values + abs(q_values[min_element_index])
+        sum_shifted = np.sum(shifted_q_values)
+
+        offset_for_min_element = min_probability / (1 - min_probability) * sum_shifted
+        shifted_q_values[min_element_index] += offset_for_min_element
+        sum_shifted += offset_for_min_element
+
+        probability_distribution =  shifted_q_values / sum_shifted
+
+        action = np.random.choice(range(self.action_shape[0]), 1, 
+                                        p = probability_distribution)[0]
+
+        return action
              
     def record_training_data(self, state, action, reward, next_state, done):
         self.training_states     .append(state)
