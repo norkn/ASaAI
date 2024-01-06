@@ -1,4 +1,8 @@
 import gymnasium as gym
+import tensorflow as tf
+
+import Agent.DoubleDeepQAgent as ddqa
+import Agent.Hyperparameters as hp
 
 from Environment import WrappedEnv as we
 
@@ -28,6 +32,38 @@ def make_env(render_mode):
     action_shape = (env.action_space.n, )
     
     return env, state_shape, action_shape
+
+def make_agent(env, state_shape, action_shape):
+    ddqAgent = ddqa.DoubleDeepQAgent(env, 
+                                     state_shape,
+                                     action_shape,
+                                     hp.LAYER_SIZES, 
+                                     hp.LAYER_ACTIVATIONS, 
+                                     tf.keras.initializers.RandomNormal(stddev=0.1),
+                                     hp.LEARNING_RATE,
+                                     hp.LOSS,
+                                     hp.OPTIMIZER,
+                                     hp.NUM_BATCHES,
+                                     hp.EPOCHS,
+                                     hp.SAMPLE_SIZE, 
+                                     hp.GAMMA, 
+                                     hp.EPSILON_DECAY)
+
+    return ddqAgent
+
+def load_agent(env, state_shape, action_shape):
+    ddqAgent = ddqa.DoubleDeepQAgent.load(env,
+                                          state_shape,
+                                          action_shape,
+                                          hp.FILENAME,
+                                          hp.NUM_BATCHES,
+                                          hp.EPOCHS,
+                                          hp.SAMPLE_SIZE, 
+                                          hp.GAMMA, 
+                                          hp.EPSILON_DECAY)
+
+    return ddqAgent
+
 
 def main(env, num_iterations, get_action, in_loop, before_end):   
     state, info = env.reset()

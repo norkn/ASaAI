@@ -1,7 +1,6 @@
 import numpy as np
 from npy_append_array import NpyAppendArray
 
-import Agent.DoubleDeepQAgent as ddqa
 import Agent.Hyperparameters as hp
 
 import Main as m
@@ -10,15 +9,7 @@ def run():
     np.random.seed(0)
     env, state_shape, action_shape = m.make_env("human")
     
-    ddqAgent = ddqa.DoubleDeepQAgent.load(env,
-                                          state_shape,
-                                          action_shape,
-                                          hp.FILENAME,
-                                          hp.NUM_BATCHES,
-                                          hp.EPOCHS,
-                                          hp.SAMPLE_SIZE, 
-                                          hp.GAMMA, 
-                                          hp.EPSILON_DECAY)
+    ddqAgent = m.load_agent(env, state_shape, action_shape)
 
 
     rl_result = m.main(env, hp.RUNNING_STEPS, ddqAgent.get_action, m.nop, m.nop)
