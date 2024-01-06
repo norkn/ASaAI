@@ -9,6 +9,7 @@ STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
 q_table_lerp_speed = 0.5
 min_probability = 0.005
+targetNet_update_step = 10
 
 class DoubleDeepQAgent:
     
@@ -161,6 +162,9 @@ class DoubleDeepQAgent:
             reward     = self.training_rewards    [k]
             next_state = self.training_next_states[k]
 
+            if k % targetNet_update_step == 0:
+                self.targetNet.set_weights(self.qNet.get_weights())
+            
             target_vector = self.get_Q_values(state)
             target_vector[action] = reward + self.gamma * self.targetNet.run(next_state)[action]
 
@@ -169,7 +173,6 @@ class DoubleDeepQAgent:
         training_states = np.array(self.training_states)
         training_targets = np.array(training_targets)
         
-        self.targetNet.set_weights(self.qNet.get_weights())
         self.qNet.train(training_states, training_targets)
         
         self._reset_training_data()
