@@ -1,19 +1,11 @@
-import gymnasium as gym
-
-import WrappedEnv as we
-
-import DoubleDeepQAgent as ddqa
-import Hyperparameters as hp
+import Agent.DoubleDeepQAgent as ddqa
+import Agent.Hyperparameters as hp
 
 import Main as m
 
 def run():
     
-    env = gym.make("CarRacing-v2", continuous = False, render_mode = "human")
-    env = we.WrappedEnv(env)
-    
-    state_shape = env.observation_space.shape    
-    action_shape = (env.action_space.n, )
+    env, state_shape, action_shape = m.make_env("human")
     
     ddqAgent = ddqa.DoubleDeepQAgent.load(env,
                                           state_shape,
@@ -25,9 +17,7 @@ def run():
                                           hp.GAMMA, 
                                           hp.EPSILON_DECAY)
 
-    steps = hp.TRAINING_STEPS
-
-    m.main(env, ddqAgent, steps, ddqAgent.get_action)
+    m.main(env, hp.TRAINING_STEPS, ddqAgent.get_action, m.nop, m.nop)
     
     
 run()

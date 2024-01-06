@@ -1,14 +1,9 @@
-import gymnasium as gym
-
 import pygame
-import tensorflow as tf
 
-import WrappedEnv as we
+import Agent.DoubleDeepQAgent as ddqa
+import Agent.Hyperparameters as hp
 
-import DoubleDeepQAgent as ddqa
-import Hyperparameters as hp
-
-import Main
+import Main as m
 
 def register_input(state):
 
@@ -42,11 +37,7 @@ register_input.action = 0
 
 def run():
     
-    env = gym.make("CarRacing-v2", continuous = False, render_mode = "human")
-    env = we.WrappedEnv(env)
-    
-    state_shape = env.observation_space.shape    
-    action_shape = (env.action_space.n, )
+    env, state_shape, action_shape = m.make_env("human")
     
     ddqAgent = ddqa.DoubleDeepQAgent(env, 
                                      state_shape,
@@ -63,9 +54,7 @@ def run():
                                      hp.GAMMA, 
                                      hp.EPSILON_DECAY)
 
-    steps = hp.TRAINING_STEPS
-
-    Main.main(env, ddqAgent, steps, register_input)
+    m.main(env, hp.TRAINING_STEPS, register_input, ddqAgent.record_training_data, ddqAgent.process_and_save_training_data)
     
     
 run()

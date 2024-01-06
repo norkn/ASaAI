@@ -3,7 +3,7 @@ from collections import defaultdict
 import numpy as np
 from npy_append_array import NpyAppendArray
 
-import DeepQNet as dqn
+import Agent.DeepQNet as dqn
 
 STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
@@ -156,13 +156,13 @@ class DoubleDeepQAgent:
     def train_on_new_data(self):
         training_targets = []
         
-        for k in range(len(self.training_states)):
-            state      = self.training_states     [k]
-            action     = self.training_actions    [k]
-            reward     = self.training_rewards    [k]
-            next_state = self.training_next_states[k]
+        for i in range(len(self.training_states)):
+            state      = self.training_states     [i]
+            action     = self.training_actions    [i]
+            reward     = self.training_rewards    [i]
+            next_state = self.training_next_states[i]
 
-            if k % targetNet_update_step == 0:
+            if i % targetNet_update_step == 0:
                 self.targetNet.set_weights(self.qNet.get_weights())
             
             target_vector = self.get_Q_values(state)

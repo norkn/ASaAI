@@ -1,5 +1,3 @@
-import numpy as np
-
 import ReinforcementLearning as rl
 import PerformanceComparator as pc
 

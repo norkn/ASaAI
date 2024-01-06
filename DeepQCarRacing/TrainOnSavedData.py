@@ -1,18 +1,11 @@
 import tensorflow as tf
-import gymnasium as gym
 
-import WrappedEnv as we
+import Agent.DoubleDeepQAgent as ddqa
+import Agent.Hyperparameters as hp
 
-import DoubleDeepQAgent as ddqa
-import Hyperparameters as hp
+import Main as m
 
-env = gym.make("CarRacing-v2", continuous = False)
-
-env = we.WrappedEnv(env)
-
-state_shape = env.observation_space.shape
-
-action_shape = (env.action_space.n, )
+env, state_shape, action_shape = m.make_env(None)
 
 ddqAgent = ddqa.DoubleDeepQAgent(env, 
                                  state_shape,
@@ -30,15 +23,15 @@ ddqAgent = ddqa.DoubleDeepQAgent(env,
                                  hp.EPSILON_DECAY)
 
 # ddqAgent = ddqa.DoubleDeepQAgent.load(env,
-#                            state_shape,
-#                            action_shape,
-#                            hp.FILENAME,
-#                            hp.NUM_BATCHES,
-#                            hp.EPOCHS,
-#                            hp.SAMPLE_SIZE, 
-#                            hp.TRAINING_ITERATIONS, 
-#                            hp.GAMMA, 
-#                            hp.EPSILON_DECAY)
+                        #    state_shape,
+                        #    action_shape,
+                        #    hp.FILENAME,
+                        #    hp.NUM_BATCHES
+                        #    hp.EPOCHS,
+                        #    hp.SAMPLE_SIZE, 
+                        #    hp.TRAINING_ITERATIONS, 
+                        #    hp.GAMMA, 
+                        #    hp.EPSILON_DECAY)
 
 ddqAgent.train_on_saved_data()
 

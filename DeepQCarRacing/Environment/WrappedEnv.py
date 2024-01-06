@@ -3,7 +3,7 @@ from gymnasium.spaces import Box
 
 import numpy as np
 
-import ObservationProcessor as op
+import Environment.ObservationProcessor as op
 
 class WrappedEnv(Wrapper):
     def __init__(self, env):
