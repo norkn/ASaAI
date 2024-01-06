@@ -26,20 +26,19 @@ ddqAgent = ddqa.DoubleDeepQAgent(env,
                                  hp.NUM_BATCHES,
                                  hp.EPOCHS,
                                  hp.SAMPLE_SIZE, 
-                                 hp.TRAINING_ITERATIONS, 
                                  hp.GAMMA, 
                                  hp.EPSILON_DECAY)
 
 # ddqAgent = ddqa.DoubleDeepQAgent.load(env,
-                        #    state_shape,
-                        #    action_shape,
-                        #    hp.FILENAME,
-                        #    hp.NUM_BATCHES
-                        #    hp.EPOCHS,
-                        #    hp.SAMPLE_SIZE, 
-                        #    hp.TRAINING_ITERATIONS, 
-                        #    hp.GAMMA, 
-                        #    hp.EPSILON_DECAY)
+#                            state_shape,
+#                            action_shape,
+#                            hp.FILENAME,
+#                            hp.NUM_BATCHES,
+#                            hp.EPOCHS,
+#                            hp.SAMPLE_SIZE, 
+#                            hp.TRAINING_ITERATIONS, 
+#                            hp.GAMMA, 
+#                            hp.EPSILON_DECAY)
 
 ddqAgent.train_on_saved_data()
 

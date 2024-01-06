@@ -32,6 +32,14 @@ class ObservationProcessor:
         return ObservationProcessor._get_value_from_pixels(observation, (89, 90), (48, 54))
 
     @staticmethod
+    def get_left_gyro(observation):
+        return ObservationProcessor._get_value_from_pixels(observation, (89, 90), (66, 72))
+
+    @staticmethod
+    def get_right_gyro(observation):
+        return ObservationProcessor._get_value_from_pixels(observation, (89, 90), (73, 79))
+
+    @staticmethod
     def get_vision(observation):
         near_vision_left = observation[66][44]       
         near_vision_right = observation[66][51]
@@ -73,6 +81,9 @@ class ObservationProcessor:
         left_steering = ObservationProcessor.get_left_steering(observation)
         right_steering = ObservationProcessor.get_right_steering(observation)
 
+        left_gyro = ObservationProcessor().get_left_gyro(observation)
+        right_gyro = ObservationProcessor().get_right_gyro(observation)
+
         vision = ObservationProcessor.get_vision(observation)
 
-        return [speed, left_steering, right_steering] + list(vision)
+        return [speed, left_steering, right_steering] + list(vision) + [left_gyro, right_gyro]

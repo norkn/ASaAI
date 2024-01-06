@@ -43,7 +43,6 @@ def run():
                                      hp.NUM_BATCHES,
                                      hp.EPOCHS,
                                      hp.SAMPLE_SIZE, 
-                                     hp.TRAINING_ITERATIONS, 
                                      hp.GAMMA, 
                                      hp.EPSILON_DECAY)
 
