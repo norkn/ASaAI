@@ -8,7 +8,7 @@ def run():
     
     ddqAgent = m.load_agent(env, state_shape, action_shape)
 
-    m.main(env, hp.TRAINING_STEPS, ddqAgent.get_action, m.nop, m.nop)
+    m.main(env, hp.RUNNING_NUM_EPISODES, ddqAgent.get_action, m.nop, m.nop)
     
     
 run()

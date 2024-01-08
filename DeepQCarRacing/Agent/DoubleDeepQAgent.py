@@ -1,7 +1,7 @@
-from collections import defaultdict
-
 import numpy as np
 from npy_append_array import NpyAppendArray
+
+from Utils import LambdaDict as ld
 
 import Agent.DeepQNet as dqn
 
@@ -27,7 +27,6 @@ class DoubleDeepQAgent:
         optimizer,
         num_batches,
         epochs,
-        sample_size,
         gamma, 
         epsilon_decay):
 
@@ -43,8 +42,6 @@ class DoubleDeepQAgent:
             self.targetNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate, loss, optimizer, num_batches, epochs)
         
         self._reset_training_data()
-
-        self.sample_size = sample_size
     
         self.gamma = gamma
         self.epsilon = 1.
@@ -59,11 +56,10 @@ class DoubleDeepQAgent:
         path,
         num_batches,
         epochs,
-        sample_size,
         gamma, 
         epsilon_decay):
 
-        model = DoubleDeepQAgent(env, state_shape, action_shape, *[None]*6, num_batches, epochs, sample_size, gamma, epsilon_decay)
+        model = DoubleDeepQAgent(env, state_shape, action_shape, *[None]*6, num_batches, epochs, gamma, epsilon_decay)
         
         model.qNet      = dqn.DeepQNet.load(path, num_batches, epochs)
         model.targetNet = dqn.DeepQNet.load(path, num_batches, epochs)
@@ -107,14 +103,11 @@ class DoubleDeepQAgent:
         self.episode.append([state, action, reward, next_state, done])
     
     def _save_training_data(self, training_states, training_q_vectors):
-        training_states = np.array(training_states)
-        training_q_vectors = np.array(training_q_vectors)
-
         NpyAppendArray(STATES_FILENAME,   delete_if_exists = False).append(training_states)
         NpyAppendArray(Q_VALUES_FILENAME, delete_if_exists = False).append(training_q_vectors)
 
-    def process_and_save_training_data(self):
-        q_table = defaultdict(lambda: np.zeros(self.action_shape[0]))
+    def process_training_data(self):
+        q_table = ld.LambdaDict(lambda state: self.get_Q_values(np.array(state)))
 
         q_value = 0
 
@@ -124,8 +117,8 @@ class DoubleDeepQAgent:
         for step in reversed(self.episode):
             state, action, reward, _, done = step
 
-            if done:
-                q_value = 0
+            if done:#
+                q_value = 0#
 
             q_value = reward + self.gamma * q_value
 
@@ -134,18 +127,27 @@ class DoubleDeepQAgent:
             
             training_states.append(state)
             training_q_vectors.append(np.array(q_table_row))
-        
+
+        self._reset_training_data()
+
+        training_states = np.array(training_states)
+        training_q_vectors = np.array(training_q_vectors)
+
+        return training_states, training_q_vectors
+
+    def process_and_save_training_data(self):
+        training_states, training_q_vectors = self.process_training_data()
         self._save_training_data(training_states, training_q_vectors)
         
+    def train_offline(self, training_states, training_q_vectors):
+        self.qNet.train(training_states, training_q_vectors)    
         self._reset_training_data()
 
     def train_on_saved_data(self):
         training_states   = np.load(STATES_FILENAME,   mmap_mode="r")
         training_q_vectors = np.load(Q_VALUES_FILENAME, mmap_mode="r")
 
-        self.qNet.train(training_states, training_q_vectors)
-        
-        self._reset_training_data()
+        self.train_offline(training_states, training_q_vectors)
 
     def train_on_new_data(self):
         training_states = []

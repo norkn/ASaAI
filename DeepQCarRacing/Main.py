@@ -45,7 +45,6 @@ def make_agent(env, state_shape, action_shape):
                                      hp.OPTIMIZER,
                                      hp.NUM_BATCHES,
                                      hp.EPOCHS,
-                                     hp.SAMPLE_SIZE, 
                                      hp.GAMMA, 
                                      hp.EPSILON_DECAY)
 
@@ -58,36 +57,41 @@ def load_agent(env, state_shape, action_shape):
                                           hp.FILENAME,
                                           hp.NUM_BATCHES,
                                           hp.EPOCHS,
-                                          hp.SAMPLE_SIZE, 
                                           hp.GAMMA, 
                                           hp.EPSILON_DECAY)
 
     return ddqAgent
 
 
-def main(env, num_iterations, get_action, in_loop, before_end):   
+def main(env, num_episodes, get_action, in_loop, end_episode):   
+    total_reward = 0
+
     state, info = env.reset()
 
-    total_reward = 0
+    terminated, truncated = False, False
     
-    for i in range(num_iterations):
-        
-        action = get_action(state)
-        
-        next_state, reward, terminated, truncated, info = env.step(action)
-    #####<
-        in_loop(state, action, reward, next_state, terminated or truncated)
-    ########>
-        state = next_state
-        
-        if terminated or truncated:
-            state, info = env.reset()
+    for i in range(num_episodes):
+        for i in range(hp.MAX_STEPS_PER_EPISODE):
+            action = get_action(state)
 
-        total_reward +=  reward
+            next_state, reward, terminated, truncated, info = env.step(action)
+        #####<
+            in_loop(state, action, reward, next_state, terminated or truncated)
+        ########>
+            state = next_state
+
+            total_reward +=  reward
+
+            if terminated or truncated:
+                state, info = env.reset()
+                break
+
+        end_episode()
+
 
     env.close()
     ##<
-    before_end()
+    #before_end()
     ###>
-    avg_reward_per_100 = 100 * (total_reward / num_iterations)
+    avg_reward_per_100 = 100 * (total_reward / num_episodes)
     return avg_reward_per_100

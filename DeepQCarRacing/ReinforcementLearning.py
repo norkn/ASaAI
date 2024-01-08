@@ -10,17 +10,14 @@ def run():
     
     def in_loop(state, action, reward, next_state, done):
         ddqAgent.record_episode(state, action, reward, next_state, done)
-        print(f"action {action}")
-
-        if in_loop.i % hp.SAMPLE_SIZE == 0:
-            ddqAgent.train_on_new_data()
-        
-        in_loop.i += 1
-    in_loop.i = 1
+        print(f"action {action}, reward: {reward}")            
     
-    before_end = lambda: ddqAgent.qNet.model.save(hp.FILENAME)
+    def end_episode():
+        training_states, training_q_vectors = ddqAgent.process_training_data()
+        ddqAgent.train_offline(training_states, training_q_vectors)
+        ddqAgent.qNet.model.save(hp.FILENAME)
 
-    m.main(env, hp.TRAINING_STEPS, ddqAgent.get_action_by_distribution, in_loop, before_end)
+    m.main(env, hp.TRAINING_NUM_EPISODES, ddqAgent.get_action_by_distribution, in_loop, end_episode)
     
     
 run()
