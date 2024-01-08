@@ -103,16 +103,23 @@ class DoubleDeepQAgent:
 
         return action
              
-    def record_training_data(self, state, action, reward, next_state, done):
+    def record_episode(self, state, action, reward, next_state, done):
         self.episode.append([state, action, reward, next_state, done])
     
+    def _save_training_data(self, training_states, training_q_vectors):
+        training_states = np.array(training_states)
+        training_q_vectors = np.array(training_q_vectors)
+
+        NpyAppendArray(STATES_FILENAME,   delete_if_exists = False).append(training_states)
+        NpyAppendArray(Q_VALUES_FILENAME, delete_if_exists = False).append(training_q_vectors)
+
     def process_and_save_training_data(self):
         q_table = defaultdict(lambda: np.zeros(self.action_shape[0]))
 
         q_value = 0
 
         training_states = []
-        training_target_vectors = []
+        training_q_vectors = []
         
         for step in reversed(self.episode):
             state, action, reward, _, done = step
@@ -126,41 +133,43 @@ class DoubleDeepQAgent:
             q_table_row[action] = (1 - q_table_lerp_speed) * q_table_row[action] + (q_table_lerp_speed) * q_value
             
             training_states.append(state)
-            training_target_vectors.append(np.array(q_table_row))
-
-        training_states = np.array(training_states)
-        training_target_vectors = np.array(training_target_vectors)
+            training_q_vectors.append(np.array(q_table_row))
         
-        NpyAppendArray(STATES_FILENAME,   delete_if_exists = False).append(training_states)
-        NpyAppendArray(Q_VALUES_FILENAME, delete_if_exists = False).append(training_target_vectors)
+        self._save_training_data(training_states, training_q_vectors)
         
         self._reset_training_data()
 
     def train_on_saved_data(self):
         training_states   = np.load(STATES_FILENAME,   mmap_mode="r")
-        training_q_values = np.load(Q_VALUES_FILENAME, mmap_mode="r")
+        training_q_vectors = np.load(Q_VALUES_FILENAME, mmap_mode="r")
 
-        self.qNet.train(training_states, training_q_values)
+        self.qNet.train(training_states, training_q_vectors)
         
         self._reset_training_data()
 
     def train_on_new_data(self):
         training_states = []
-        training_targets = []
+        training_q_vectors = []
         
-        for step in self.episode:
-            state, action, reward, next_state, done = step
+        for i in range(len(self.episode)):
+            state, action, reward, next_state, done = self.episode[i]
             
-            target_vector = self.get_Q_values(state)
-            target_vector[action] = reward + self.gamma * self.targetNet.run(next_state)[action]
+            q_vector = self.get_Q_values(state)
+            q_vector[action] = reward + self.gamma * self.targetNet.run(next_state)[action]
 
             training_states.append(state)
-            training_targets.append(target_vector)
+            training_q_vectors.append(q_vector)
 
-        training_states = np.array(training_states)
-        training_targets = np.array(training_targets)
-        
-        self.qNet.train(training_states, training_targets)
+            if (i + 1) % 100 == 0:
+                self.targetNet.set_weights(self.qNet.get_weights())
+
+                np_training_states = np.array(training_states)
+                np_training_q_vectors = np.array(training_q_vectors)
+
+                self.qNet.train(np_training_states, np_training_q_vectors)
+
+                training_states = []
+                training_q_vectors = []
         
         self._reset_training_data()
         

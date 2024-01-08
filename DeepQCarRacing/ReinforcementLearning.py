@@ -4,12 +4,12 @@ import Main as m
 
 def run():
     
-    env, state_shape, action_shape = m.make_env("human")
+    env, state_shape, action_shape = m.make_env(None)
     
     ddqAgent = m.load_agent(env, state_shape, action_shape)
     
     def in_loop(state, action, reward, next_state, done):
-        ddqAgent.record_training_data(state, action, reward, next_state, done)
+        ddqAgent.record_episode(state, action, reward, next_state, done)
         print(f"action {action}")
 
         if in_loop.i % hp.SAMPLE_SIZE == 0:
