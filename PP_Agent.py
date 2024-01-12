@@ -361,7 +361,7 @@ env = gym.make("CarRacing-v2",continuous=False)
 
 observation, info = env.reset()
 
-episodes = 20
+episodes = 10
 timesteps = 1000
 
 epsilon = 0.5
@@ -373,6 +373,8 @@ for episode in range(episodes):
     episode_info = []  # List to store information for each timestep in the episode
     total_reward = 0
     print(f"start Episode {episode+1}")
+
+    # REDUCE EPSILON 
     for timestep in range(timesteps):
         
         state = np.array(Agent_state_Processor.get_state(observation))
@@ -398,25 +400,29 @@ for episode in range(episodes):
             break
     trainings_info.append(episode_info)
 
-    state_list = []
-    target_list = []
     # RL train the agent
-    if episode % 5 == 0:
+    if (episode + 1) % 5 == 0:
+        state_list = []
+        target_list = []
+        print(f"Fit the Model on Episode {episode+1-5} to {episode + 1}")
         for info in trainings_info:
             for step in info:
                 state,action,reward = step
-                target = reward + gamma * np.max(model.predict(next_state.reshape(1, *next_state.shape))[0])
+                #target = reward + gamma * np.max(model.predict(next_state.reshape(1, *next_state.shape))[0])
+                print("Pre Predict")
+                target = model.predict(state.reshape(1, *state.shape))[0]
+                print("after Predict")
+                target[action] = reward + gamma * np.max(model.predict(next_state.reshape(1, *next_state.shape))[0])
                 target_list.append(target)
                 state_list.append(state)
+        state_list = np.array(state_list)
+        target_list = np.array(target_list)
 
-  
-    state_list = np.array(state_list)
-    target_list = np.array(target_list)
-
-    model.fit(state_list, target_list, batch_size=10, epochs=1, verbose=0)
-    
+        model.fit(state_list, target_list, batch_size=10, epochs=1, verbose=0)
+        trainings_info = []
+        print("Fitting Done")
 env.close()
-print("training done")
+print("Training done")
 #
 
 #%% agent ueberpruefen und auswerten
