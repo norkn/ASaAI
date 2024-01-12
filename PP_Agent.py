@@ -1,10 +1,13 @@
+#%% load imports und classes 
 import cv2
 import numpy as np
 import pickle
 import gymnasium as gym
 from collections import defaultdict
+import keras
+import tensorflow as tf
+import random
 
-# trainingsdaten generieren
 class Trainingsdata_generator:
     def __init__(self):
         pass
@@ -103,7 +106,7 @@ class Trainingsdata_generator:
         vision = Trainingsdata_generator.get_vision(observation)
         return [speed, left_steering, right_steering] + list(vision)
 
-import numpy as np
+
 
 class Agent_state_Processor:
 
@@ -182,7 +185,7 @@ class Agent_state_Processor:
 
         return [speed, left_steering, right_steering] + list(vision)
    
-def get_action(state):
+def get_dummy_action(state):
 
     action = 0
     left = 0
@@ -202,26 +205,29 @@ def get_action(state):
     
     return action
 
+#%% trainingsdaten generieren
 env = gym.make("CarRacing-v2", continuous=False)
 
 observation, info = env.reset()
 
-episodes = 2
-timesteps = 50
+episodes = 5
+timesteps = 1000
 
 training_data = []
 
+print("Starting the trainings - loop")
 # Loop too get trainingsdata
 for episode in range(episodes):
     episode_info = []  # List to store information for each timestep in the episode
-    gates = 0
+    total_reward = 0
+    print(f"Episode {episode + 1} done!")
     for timestep in range(timesteps):
         
         state = Trainingsdata_generator.get_state(observation)
 
         trainings_state = Agent_state_Processor.get_state(observation) #len = 265
         
-        action = get_action(state)
+        action = get_dummy_action(state)
         observation, reward, terminated, truncated, info = env.step(action)
 
         next_state = Trainingsdata_generator.get_state(observation)
@@ -229,9 +235,7 @@ for episode in range(episodes):
 
         episode_info.append((trainings_state, action, reward, terminated or truncated))
 
-        # highscore
-        if reward >= 3:
-            gates += 1
+        total_reward += reward
         
         if terminated or truncated:
             observation, info = env.reset() 
@@ -249,8 +253,9 @@ except Exception as e:
     print(f"Error occurred while saving training data to {trainings_data_filename}: {e}")
 
 env.close()
+print("Finished the trainings - loop")
 
-
+#%% generate qtable with state action pairs
 # Function to load training data from a file using pickle
 def load_training_data(filename):
     """
@@ -302,10 +307,147 @@ def process_and_save_training_data(training_data):
 
 # q_werte der trainingsdaten berechnen
 process_and_save_training_data(training_data)
-# agent an trainingsdaten trainieren lassen
+
+#%% agent an trainingsdaten trainieren lassen                            
+
+
+state_shape =  (265,)
+action_shape = (5,)
+
+layer_sizes = [8,16]
+activation_functions = len(layer_sizes) * ['relu'] + ['linear']
+init = tf.keras.initializers.RandomNormal(stddev=0.1, seed=0)
+
+loss = tf.keras.losses.MeanSquaredError()
+optimizer = tf.keras.optimizers.Adam
+learning_rate = 0.01
+
+model = keras.Sequential()
+
+model.add(keras.layers.Flatten(input_shape = state_shape))
+
+for i in range(len(layer_sizes)):
+        model.add(keras.layers.Dense(layer_sizes[i], activation = activation_functions[i], kernel_initializer = init))
+model.add(keras.layers.Dense(action_shape[0], activation = activation_functions[-1], kernel_initializer = init))
+model.compile(loss = loss, optimizer = optimizer(learning_rate = learning_rate))
+
+q_table = load_training_data("Q_table.pkl")
+
+states = np.array(list(q_table))
+
+q_values = np.array(list(q_table.values()))
+
+num_batches = 100
+epochs = 10
 
 
 
-# agent via RL sich verbessern lassen
+history = model.fit(            #returns history of the training
+            states,
+            q_values,
+            batch_size = int(len(states) / num_batches),
+            epochs = epochs,
+            #verbose = 0
+        )
 
-# agent ueberpruefen und auswerten
+
+
+
+#%% agent via RL sich verbessern lassen
+
+print("Start RL training")
+
+env = gym.make("CarRacing-v2",continuous=False)
+
+observation, info = env.reset()
+
+episodes = 20
+timesteps = 1000
+
+epsilon = 0.5
+gamma = 0.97
+action_size = 5
+trainings_info = []
+# Loop to train the agent further with RL
+for episode in range(episodes):
+    episode_info = []  # List to store information for each timestep in the episode
+    total_reward = 0
+    print(f"start Episode {episode+1}")
+    for timestep in range(timesteps):
+        
+        state = np.array(Agent_state_Processor.get_state(observation))
+        
+        if np.random.rand() < epsilon:
+            action = np.random.choice(action_size)
+        else:
+            action = np.argmax(model.predict(state.reshape(1, *state.shape))[0])
+
+        observation, reward, terminated, truncated, info = env.step(action)
+
+        next_state = np.array(Agent_state_Processor.get_state(observation))
+
+        episode_info.append((state, action, reward))
+
+        total_reward += reward
+
+        # Update the current state
+        state = next_state
+        
+        if terminated or truncated:
+            observation, info = env.reset() 
+            break
+    trainings_info.append(episode_info)
+
+    state_list = []
+    target_list = []
+    # RL train the agent
+    if episode % 5 == 0:
+        for info in trainings_info:
+            for step in info:
+                state,action,reward = step
+                target = reward + gamma * np.max(model.predict(next_state.reshape(1, *next_state.shape))[0])
+                target_list.append(target)
+                state_list.append(state)
+
+  
+    state_list = np.array(state_list)
+    target_list = np.array(target_list)
+
+    model.fit(state_list, target_list, batch_size=10, epochs=1, verbose=0)
+    
+env.close()
+print("training done")
+#
+
+#%% agent ueberpruefen und auswerten
+    
+    
+env = gym.make("CarRacing-v2", render_mode="human",continuous=False)
+
+observation, info = env.reset()
+
+episodes = 10
+timesteps = 1000
+
+# Loop to train the agent further with RL
+for episode in range(episodes):
+    total_reward = 0
+    for timestep in range(timesteps):
+        
+        state = np.array(Agent_state_Processor.get_state(observation))
+    
+        action = np.argmax(model.predict(state.reshape(1, *state.shape))[0])
+
+        observation, reward, terminated, truncated, info = env.step(action)
+
+        next_state = np.array(Agent_state_Processor.get_state(observation))
+
+        total_reward += reward
+
+        # Update the current state
+        state = next_state
+        
+        if terminated or truncated:
+            observation, info = env.reset() 
+            break
+env.close()
