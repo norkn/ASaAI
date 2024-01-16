@@ -359,7 +359,7 @@ history = model.fit(            #returns history of the training
 
 model.save(model_filename)
 
-env = gym.make("CarRacing-v2", render_mode="human",continuous=False)
+env = gym.make("CarRacing-v2",continuous=False)
 
 observation, info = env.reset()
 
@@ -463,6 +463,7 @@ for episode in range(episodes):
 
                 target_list.append(target)
 
+        target_list.append(info[-1][2])
         target_list = np.array(target_list)
 
         model.fit(state_list, target_list, batch_size=10, epochs=1, verbose=None)
