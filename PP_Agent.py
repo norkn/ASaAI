@@ -4,10 +4,34 @@ import numpy as np
 import pickle
 import gymnasium as gym
 from collections import defaultdict
-import keras
+#import keras
 import tensorflow as tf
+from tensorflow import keras
 import random
+#helper functions
+# Function to load training data from a file using pickle
+def load_training_data(filename):
+    """
+    Load training data from a file using pickle.
 
+    Parameters:
+    - filename (str): The name of the file to load.
+
+    Returns:
+    - list: The loaded training data or an empty list if the file is not found.
+    """
+    try:
+        print(f"Loading training data from {filename}...")
+        with open(filename, 'rb') as file:
+            loaded_data = pickle.load(file)
+            print("Training data loaded successfully.")
+            return loaded_data
+    except FileNotFoundError:
+        print(f"File {filename} not found. Initializing with an empty list.")
+        return []
+#Variables 
+
+model_filename = "model.keras"
 class Trainingsdata_generator:
     def __init__(self):
         pass
@@ -245,37 +269,20 @@ for episode in range(episodes):
 
 # Save training_data to a file using pickl
 trainings_data_filename = "training_dataset_1000.pkl"
-try:
-    with open(trainings_data_filename, 'wb') as file:
-        pickle.dump(training_data, file)
-    print(f"Training data saved to {trainings_data_filename} successfully.")
-except Exception as e:
-    print(f"Error occurred while saving training data to {trainings_data_filename}: {e}")
+def save_file(filedata,filename):
+    try:
+        with open(filename, 'wb') as file:
+            pickle.dump(filedata, file)
+        print(f"Training data saved to {filename} successfully.")
+    except Exception as e:
+        print(f"Error occurred while saving training data to {filename}: {e}")
+
 
 env.close()
 print("Finished the trainings - loop")
 
 #%% generate qtable with state action pairs
-# Function to load training data from a file using pickle
-def load_training_data(filename):
-    """
-    Load training data from a file using pickle.
 
-    Parameters:
-    - filename (str): The name of the file to load.
-
-    Returns:
-    - list: The loaded training data or an empty list if the file is not found.
-    """
-    try:
-        print(f"Loading training data from {filename}...")
-        with open(filename, 'rb') as file:
-            loaded_data = pickle.load(file)
-            print("Training data loaded successfully.")
-            return loaded_data
-    except FileNotFoundError:
-        print(f"File {filename} not found. Initializing with an empty list.")
-        return []
     
 training_data = load_training_data(trainings_data_filename)
 
@@ -309,7 +316,6 @@ def process_and_save_training_data(training_data):
 process_and_save_training_data(training_data)
 
 #%% agent an trainingsdaten trainieren lassen                            
-
 
 state_shape =  (265,)
 action_shape = (5,)
@@ -347,34 +353,68 @@ history = model.fit(            #returns history of the training
             q_values,
             batch_size = int(len(states) / num_batches),
             epochs = epochs,
-            #verbose = 0
+            verbose = None
         )
 
 
+model.save(model_filename)
 
-
-#%% agent via RL sich verbessern lassen
-
-print("Start RL training")
-
-env = gym.make("CarRacing-v2",continuous=False)
+env = gym.make("CarRacing-v2", render_mode="human",continuous=False)
 
 observation, info = env.reset()
 
 episodes = 10
 timesteps = 1000
 
-epsilon = 0.5
+# Loop to train the agent further with RL
+for episode in range(episodes):
+    total_reward_before_RL = 0
+    for timestep in range(timesteps):
+        
+        state = np.array(Agent_state_Processor.get_state(observation))
+    
+        action = np.argmax(model.predict(state.reshape(1, *state.shape),verbose=None)[0])
+
+        observation, reward, terminated, truncated, info = env.step(action)
+
+        next_state = np.array(Agent_state_Processor.get_state(observation))
+
+        total_reward_before_RL += reward
+
+        # Update the current state
+        state = next_state
+        
+        if terminated or truncated:
+            observation, info = env.reset() 
+            break
+    print(total_reward_before_RL)
+env.close()
+
+#%% agent via RL sich verbessern lassen
+
+print("Start RL training")
+
+env = gym.make("CarRacing-v2",continuous=False)
+observation, info = env.reset()
+
+model = keras.models.load_model(model_filename)
+
+episodes = 4
+timesteps = 1000
+
+epsilon = 0.25
+epsilon_decay = 0.95
 gamma = 0.97
 action_size = 5
 trainings_info = []
+
 # Loop to train the agent further with RL
 for episode in range(episodes):
     episode_info = []  # List to store information for each timestep in the episode
     total_reward = 0
     print(f"start Episode {episode+1}")
 
-    # REDUCE EPSILON 
+    if epsilon > 0.01 : epsilon *= epsilon_decay
     for timestep in range(timesteps):
         
         state = np.array(Agent_state_Processor.get_state(observation))
@@ -382,7 +422,7 @@ for episode in range(episodes):
         if np.random.rand() < epsilon:
             action = np.random.choice(action_size)
         else:
-            action = np.argmax(model.predict(state.reshape(1, *state.shape))[0])
+            action = np.argmax(model.predict(state.reshape(1, *state.shape),verbose = None)[0])
 
         observation, reward, terminated, truncated, info = env.step(action)
 
@@ -400,27 +440,37 @@ for episode in range(episodes):
             break
     trainings_info.append(episode_info)
 
+    print(f"Total Reward: {total_reward}")
     # RL train the agent
-    if (episode + 1) % 5 == 0:
-        state_list = []
-        target_list = []
+    if (episode + 1) % 2 == 0:
+        c = 0
         print(f"Fit the Model on Episode {episode+1-5} to {episode + 1}")
         for info in trainings_info:
+            state_list = []
+            target_list = []
+            c += 1
+            print(f"Info: {c}")
             for step in info:
-                state,action,reward = step
-                #target = reward + gamma * np.max(model.predict(next_state.reshape(1, *next_state.shape))[0])
-                print("Pre Predict")
-                target = model.predict(state.reshape(1, *state.shape))[0]
-                print("after Predict")
-                target[action] = reward + gamma * np.max(model.predict(next_state.reshape(1, *next_state.shape))[0])
+                state_list.append(step[0])
+
+            state_list = np.array(state_list)
+            q_value = model.predict(state_list, verbose = None)
+            
+            for i in range(len(info)-1):
+                state,action,reward = info[i]
+                target = q_value[i]
+                target[action] = reward + gamma * np.max(q_value[i+1])
+
                 target_list.append(target)
-                state_list.append(state)
-        state_list = np.array(state_list)
+
         target_list = np.array(target_list)
 
-        model.fit(state_list, target_list, batch_size=10, epochs=1, verbose=0)
+        model.fit(state_list, target_list, batch_size=10, epochs=1, verbose=None)
         trainings_info = []
         print("Fitting Done")
+
+model.save(model_filename)
+
 env.close()
 print("Training done")
 #
