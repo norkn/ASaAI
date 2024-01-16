@@ -346,8 +346,6 @@ q_values = np.array(list(q_table.values()))
 num_batches = 100
 epochs = 10
 
-
-
 history = model.fit(            #returns history of the training
             states,
             q_values,
@@ -358,17 +356,18 @@ history = model.fit(            #returns history of the training
 
 
 model.save(model_filename)
-
+'''
 env = gym.make("CarRacing-v2",continuous=False)
 
 observation, info = env.reset()
 
-episodes = 10
+episodes = 5
 timesteps = 1000
 
 # Loop to train the agent further with RL
 for episode in range(episodes):
     total_reward_before_RL = 0
+    print(f"start Episode {episode+1}")
     for timestep in range(timesteps):
         
         state = np.array(Agent_state_Processor.get_state(observation))
@@ -387,22 +386,24 @@ for episode in range(episodes):
         if terminated or truncated:
             observation, info = env.reset() 
             break
-    print(total_reward_before_RL)
+    print("Total Reward:", total_reward_before_RL)
 env.close()
+'''
 
 #%% agent via RL sich verbessern lassen
 
 print("Start RL training")
 
-env = gym.make("CarRacing-v2",continuous=False)
+env = gym.make("CarRacing-v2", continuous=False)
 observation, info = env.reset()
 
-model = keras.models.load_model(model_filename)
 
-episodes = 4
+model = keras.models.load_model(model_filename)
+RL_model_filename = "RL_Agent.keras"
+episodes = 50
 timesteps = 1000
 
-epsilon = 0.25
+epsilon = 0.10
 epsilon_decay = 0.95
 gamma = 0.97
 action_size = 5
@@ -442,9 +443,9 @@ for episode in range(episodes):
 
     print(f"Total Reward: {total_reward}")
     # RL train the agent
-    if (episode + 1) % 2 == 0:
+    if (episode + 1) % 5 == 0:
         c = 0
-        print(f"Fit the Model on Episode {episode+1-5} to {episode + 1}")
+        print(f"Fit the Model on Episode {episode+1} to {episode + 1}")
         for info in trainings_info:
             state_list = []
             target_list = []
@@ -455,22 +456,30 @@ for episode in range(episodes):
 
             state_list = np.array(state_list)
             q_value = model.predict(state_list, verbose = None)
+            #print(f"QValue = {q_value} Shape = {q_value.shape}")
             
             for i in range(len(info)-1):
                 state,action,reward = info[i]
                 target = q_value[i]
                 target[action] = reward + gamma * np.max(q_value[i+1])
-
+                #print(f"Target = {target} Shape = {target.shape}")
                 target_list.append(target)
 
-        target_list.append(info[-1][2])
+        action = info[-1][1]
+        reward = info[-1][2]
+
+        target = np.zeros(5)
+        target[action] = reward
+
+        target_list.append(target)
         target_list = np.array(target_list)
+        #print(f"Target List = {target_list} Shape = {target_list.shape}")
 
         model.fit(state_list, target_list, batch_size=10, epochs=1, verbose=None)
         trainings_info = []
         print("Fitting Done")
 
-model.save(model_filename)
+model.save(RL_model_filename)
 
 env.close()
 print("Training done")
