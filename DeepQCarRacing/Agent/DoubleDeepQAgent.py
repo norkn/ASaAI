@@ -7,7 +7,7 @@ import Agent.DeepQNet as dqn
 
 STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
-q_table_lerp_speed = 0.5
+q_table_lerp_speed = 0.05
 min_probability = 0.005
 
 class DoubleDeepQAgent:
@@ -44,7 +44,7 @@ class DoubleDeepQAgent:
         self._reset_training_data()
     
         self.gamma = gamma
-        self.epsilon = 1.
+        self.epsilon = .2
         self.epsilon_decay = epsilon_decay
         
 
@@ -66,15 +66,19 @@ class DoubleDeepQAgent:
 
         return model
     
+    def get_Q_values_batch(self, states):
+        return self.qNet.run_batch(states)
+
     def get_Q_values(self, state):
         return self.qNet.run(state)
     
     def get_action(self, state):        
         return np.argmax(self.get_Q_values(state))
-        
-    def get_action_epsilon_greedy(self, state):
+
+    def decay_epsilon(self):
         self.epsilon *= self.epsilon_decay
         
+    def get_action_epsilon_greedy(self, state):        
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
@@ -107,7 +111,15 @@ class DoubleDeepQAgent:
         NpyAppendArray(Q_VALUES_FILENAME, delete_if_exists = False).append(training_q_vectors)
 
     def process_training_data(self):
-        q_table = ld.LambdaDict(lambda state: self.get_Q_values(np.array(state)))
+        states = np.array([self.episode[i][0] for i in range(len(self.episode))])
+        q_values = self.get_Q_values_batch(states)
+        
+        #q_table = ld.LambdaDict(lambda state: self.get_Q_values(np.array(state)))
+        q_table = ld.LambdaDict(lambda state: 0)
+        for i in range(len(states)):
+            state = states[i]
+            q_value = q_values[i]
+            q_table[tuple(state)] = q_value
 
         q_value = 0
 

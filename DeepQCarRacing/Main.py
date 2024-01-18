@@ -25,7 +25,7 @@ def nop(*args):
         return
 
 def make_env(render_mode):
-    env = gym.make("CarRacing-v2", continuous = False, render_mode = render_mode)
+    env = gym.make(hp.ENV, render_mode = render_mode, continuous = False)
     env = we.WrappedEnv(env)
     
     state_shape = env.observation_space.shape    
@@ -90,8 +90,7 @@ def main(env, num_episodes, get_action, in_loop, end_episode):
 
 
     env.close()
-    ##<
-    #before_end()
-    ###>
-    avg_reward_per_100 = 100 * (total_reward / num_episodes)
-    return avg_reward_per_100
+
+    avg_reward_per_episode = total_reward / num_episodes
+    return avg_reward_per_episode
+

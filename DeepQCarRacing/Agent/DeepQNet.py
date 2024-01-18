@@ -65,7 +65,11 @@ class DeepQNet:
         
     def set_weights(self, weights):
         return self.model.set_weights(weights)
-        
+
+    def run_batch(self, states):
+        states = np.array(states)
+        return self.model.predict(states)
+
     def run(self, state):
         state = np.array(state)
         return self.model.predict(state.reshape(1, *state.shape))[0]
