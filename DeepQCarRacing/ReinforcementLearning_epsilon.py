@@ -23,9 +23,11 @@ def run():
 
         ddqAgent.decay_epsilon()
 
-        training_states, training_q_vectors = ddqAgent.process_training_data()
+        training_states, training_q_vectors = ddqAgent.process_episode()
         ddqAgent.train_offline(training_states, training_q_vectors)
         ddqAgent.qNet.model.save(hp.FILENAME)
+        
+        ddqAgent.save_episode()
 
     m.main(env, hp.TRAINING_NUM_EPISODES, ddqAgent.get_action_epsilon_greedy, in_loop, end_episode)
     

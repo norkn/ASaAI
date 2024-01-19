@@ -13,7 +13,7 @@ def run():
         print(f"action {action}, reward: {reward}")            
     
     def end_episode():
-        training_states, training_q_vectors = ddqAgent.process_training_data()
+        training_states, training_q_vectors = ddqAgent.process_episode()
         ddqAgent.train_offline(training_states, training_q_vectors)
         ddqAgent.qNet.model.save(hp.FILENAME)
 

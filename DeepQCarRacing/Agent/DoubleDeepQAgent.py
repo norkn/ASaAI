@@ -7,12 +7,13 @@ import Agent.DeepQNet as dqn
 
 STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
+EPISODES_FILENAME = 'Savefiles/episodes.npy'
 q_table_lerp_speed = 0.05
 min_probability = 0.005
 
 class DoubleDeepQAgent:
     
-    def _reset_training_data(self):
+    def _reset_episode(self):
         self.episode = []
     
     def __init__(self, 
@@ -41,10 +42,10 @@ class DoubleDeepQAgent:
             self.qNet      = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate, loss, optimizer, num_batches, epochs)
             self.targetNet = dqn.DeepQNet(self.state_shape, self.action_shape, layer_sizes, activation_functions, init, learning_rate, loss, optimizer, num_batches, epochs)
         
-        self._reset_training_data()
+        self._reset_episode()
     
         self.gamma = gamma
-        self.epsilon = .2
+        self.epsilon = .15
         self.epsilon_decay = epsilon_decay
         
 
@@ -104,13 +105,18 @@ class DoubleDeepQAgent:
         return action
              
     def record_episode(self, state, action, reward, next_state, done):
-        self.episode.append([state, action, reward, next_state, done])
+        self.episode.append([state, action, reward, next_state, int(done)])
+
+    def save_episode(self):
+        episode = np.array(self.episode)
+        NpyAppendArray(EPISODES_FILENAME, delete_if_exists = False).append(episode)
+        self._reset_episode()
     
     def _save_training_data(self, training_states, training_q_vectors):
         NpyAppendArray(STATES_FILENAME,   delete_if_exists = False).append(training_states)
         NpyAppendArray(Q_VALUES_FILENAME, delete_if_exists = False).append(training_q_vectors)
 
-    def process_training_data(self):
+    def process_episode(self):
         states = np.array([self.episode[i][0] for i in range(len(self.episode))])
         q_values = self.get_Q_values_batch(states)
         
@@ -140,20 +146,26 @@ class DoubleDeepQAgent:
             training_states.append(state)
             training_q_vectors.append(np.array(q_table_row))
 
-        self._reset_training_data()
+        self._reset_episode()
 
         training_states = np.array(training_states)
         training_q_vectors = np.array(training_q_vectors)
 
         return training_states, training_q_vectors
 
-    def process_and_save_training_data(self):
-        training_states, training_q_vectors = self.process_training_data()
+    def load_and_process_episode(self):
+        self._reset_episode()
+        self.episode = np.load(EPISODES_FILENAME, mmap_mode="r")
+
+        return self.process_episode()
+
+    def process_episode_and_save_training_data(self):
+        training_states, training_q_vectors = self.process_episode()
         self._save_training_data(training_states, training_q_vectors)
         
     def train_offline(self, training_states, training_q_vectors):
         self.qNet.train(training_states, training_q_vectors)    
-        self._reset_training_data()
+        self._reset_episode()
 
     def train_on_saved_data(self):
         training_states   = np.load(STATES_FILENAME,   mmap_mode="r")
@@ -185,6 +197,6 @@ class DoubleDeepQAgent:
                 training_states = []
                 training_q_vectors = []
         
-        self._reset_training_data()
+        self._reset_episode()
         
             
