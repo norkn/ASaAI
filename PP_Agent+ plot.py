@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 import gymnasium as gym
 from collections import defaultdict
-# import keras
+import keras
 import tensorflow as tf
 from tensorflow import keras
 import random
@@ -242,14 +242,16 @@ env = gym.make("CarRacing-v2", continuous=False)
 observation, info = env.reset()
 
 episodes = 10
-timesteps = 1000
+timesteps = 100 #1000
 
 training_data = []
 
 ep_rewards = []
 model_rewards = []
-aggr_ep_rewards = {'ep': [], 'avg': [], 'min': [], 'max': [], 'total': []} #Dictionary welches die rewards pro episode abspeichert.
-aggr_ep_model = {'ep': [], 'avg': [], 'min': [], 'max': [], 'total': []} #Dictionary welches die rewards pro episode abspeichert.
+pretrain_rewards =[]
+aggr_ep_rewards = {'ep': [], 'avg': [], 'min': [], 'total': []}  # Dictionary welches die rewards pro episode abspeichert.
+aggr_ep_model = {'ep': [], 'avg': [], 'total': []}  # Dictionary welches die rewards pro episode abspeichert.
+aggr_pretrain = {'ep': [], 'avg': [], 'total': []}  # Dictionary welches die rewards pro episode abspeichert.
 
 print("Starting the trainings - loop")
 # Loop too get trainingsdata
@@ -272,12 +274,20 @@ for episode in range(episodes):
         episode_info.append((trainings_state, action, reward, terminated or truncated))
 
         total_reward += reward
+        pretrain_rewards.append(total_reward)
 
         if terminated or truncated:
             observation, info = env.reset()
             break
     # print(f"Gates round {episode}: {gates}")
     training_data.append(episode_info)
+    if not episodes % 1:
+        average_reward_model = sum(pretrain_rewards[-timesteps:]) / len(pretrain_rewards[-timesteps:])
+        aggr_pretrain['ep'].append(episode)
+        aggr_pretrain['avg'].append(average_reward_model)
+        aggr_pretrain['total'].append(total_reward)
+
+np.save('Pre_Train_Rewards', total_reward)
 
 # Save training_data to a file using pickl
 trainings_data_filename = "training_dataset_1000.pkl"
@@ -293,6 +303,8 @@ def save_file(filedata, filename):
 
 
 env.close()
+
+save_file(training_data, trainings_data_filename)
 print("Finished the trainings - loop")
 
 # %% generate qtable with state action pairs
@@ -371,22 +383,22 @@ history = model.fit(  # returns history of the training
 
 model.save(model_filename)
 
-env = gym.make("CarRacing-v2",continuous=False)
+env = gym.make("CarRacing-v2", continuous=False)
 
 observation, info = env.reset()
 
-episodes = 15
-timesteps = 1000
+episodes = 10       #15
+timesteps = 100 #1000
 
 # Loop to train the agent further with trained model
 for episode in range(episodes):
     total_reward_before_RL = 0
-    print(f"start Episode {episode+1}")
+    print(f"start Episode {episode + 1}")
     for timestep in range(timesteps):
 
         state = np.array(Agent_state_Processor.get_state(observation))
 
-        action = np.argmax(model.predict(state.reshape(1, *state.shape),verbose=None)[0])
+        action = np.argmax(model.predict(state.reshape(1, *state.shape), verbose=None)[0])
 
         observation, reward, terminated, truncated, info = env.step(action)
 
@@ -399,20 +411,18 @@ for episode in range(episodes):
         state = next_state
 
         if terminated or truncated:
-            observation, info = env.reset() 
+            observation, info = env.reset()
             break
 
     if not episodes % 1:
         average_reward_model = sum(model_rewards[-timesteps:]) / len(model_rewards[-timesteps:])
         aggr_ep_model['ep'].append(episode)
         aggr_ep_model['avg'].append(average_reward_model)
-        aggr_ep_model['min'].append(min(model_rewards[-timesteps:]))
-        aggr_ep_model['max'].append(max(model_rewards[-timesteps:]))
         aggr_ep_model['total'].append(total_reward_before_RL)
-        print(f"Episode: {episode} avg: {average_reward_model} min: {min(model_rewards[-timesteps:])} max: {max(model_rewards[-timesteps:])}")
-    print("Total Reward:", total_reward_before_RL)
-env.close()
 
+np.save('Model_Train_Rewards', total_reward_before_RL)
+
+env.close()
 
 # %% agent via RL sich verbessern lassen
 
@@ -423,8 +433,8 @@ observation, info = env.reset()
 
 model = keras.models.load_model(model_filename)
 RL_model_filename = "RL_Agent.keras"
-episodes = 100    #50
-timesteps = 1000
+episodes = 10  # 500
+timesteps = 100 #100
 
 epsilon = 0.10
 epsilon_decay = 0.95
@@ -468,11 +478,9 @@ for episode in range(episodes):
         average_reward = sum(ep_rewards[-timesteps:]) / len(ep_rewards[-timesteps:])
         aggr_ep_rewards['ep'].append(episode)
         aggr_ep_rewards['avg'].append(average_reward)
-        aggr_ep_rewards['min'].append(min(ep_rewards[-timesteps:]))
-        aggr_ep_rewards['max'].append(max(ep_rewards[-timesteps:]))
+        aggr_ep_rewards['min'].append(min(ep_rewards[-timesteps]))
         aggr_ep_rewards['total'].append(total_reward)
-        print(f"Episode: {episode} avg: {average_reward} min: {min(ep_rewards[-timesteps:])} max: {max(ep_rewards[-timesteps:])}")
-    print(f"Total Reward: {total_reward}")
+
 
     # RL train the agent
     if (episode + 1) % 5 == 0:
@@ -512,6 +520,7 @@ for episode in range(episodes):
         print("Fitting Done")
 
 model.save(RL_model_filename)
+np.save('RL_Train_Rewards', total_reward)
 
 env.close()
 print("Training done")
@@ -549,15 +558,12 @@ for episode in range(episodes):
             observation, info = env.reset()
             break
 env.close()
-#plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['avg'], label="avg")
-#plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['min'], label="min")
-#plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['max'], label="max")
-plt.plot(aggr_ep_rewards['ep'], aggr_ep_model['total'], label="total_model")
+MinimumY = aggr_ep_rewards['min']
 
-#plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['avg'], label="avg")
-#plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['min'], label="min")
-#plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['max'], label="max")
+plt.plot(aggr_pretrain['ep'], aggr_pretrain['total'], label="total_pretrain")
+plt.plot(aggr_ep_model['ep'], aggr_ep_model['total'], label="total_model")
 plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['total'], label="total_RL")
+plt.ylim(MinimumY, 950)
 plt.xlabel("episodes")
 plt.ylabel("reward")
 plt.legend(loc=4)
