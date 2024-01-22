@@ -40,7 +40,11 @@ def run():
     
     ddqAgent = m.make_agent(env, state_shape, action_shape)
 
-    m.main(env, hp.TRAINING_NUM_EPISODES, register_input, ddqAgent.record_episode, ddqAgent.process_episode_and_save_training_data)
+    def end_episode():
+        ddqAgent.save_episode()
+        ddqAgent.process_episode_and_save_training_data
+
+    m.main(env, hp.TRAINING_NUM_EPISODES, register_input, ddqAgent.record_episode, end_episode)
     
     
 run()

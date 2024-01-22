@@ -17,6 +17,10 @@ def run():
         ddqAgent.train_offline(training_states, training_q_vectors)
         ddqAgent.qNet.model.save(hp.FILENAME)
 
+        ddqAgent.save_episode()
+
+        ddqAgent._reset_episode()
+
     m.main(env, hp.TRAINING_NUM_EPISODES, ddqAgent.get_action_by_distribution, in_loop, end_episode)
     
     

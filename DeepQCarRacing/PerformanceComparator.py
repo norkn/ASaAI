@@ -38,4 +38,4 @@ def run():
     scripted_result = m.main(env, hp.RUNNING_NUM_EPISODES, m.scripted_policy, in_loop, end_episode)
     NpyAppendArray('Savefiles/scripted_results.npy',   delete_if_exists = False).append(np.array([scripted_result]))
     
-run()
+#run()

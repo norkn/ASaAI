@@ -28,8 +28,9 @@ def run():
         ddqAgent.qNet.model.save(hp.FILENAME)
         
         ddqAgent.save_episode()
+        ddqAgent._reset_episode()
 
     m.main(env, hp.TRAINING_NUM_EPISODES, ddqAgent.get_action_epsilon_greedy, in_loop, end_episode)
     
     
-run()
+#run()

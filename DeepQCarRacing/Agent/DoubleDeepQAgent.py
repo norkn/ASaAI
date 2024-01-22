@@ -8,7 +8,7 @@ import Agent.DeepQNet as dqn
 STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
 EPISODES_FILENAME = 'Savefiles/episodes.npy'
-q_table_lerp_speed = 0.05
+q_table_lerp_speed = 0.2
 min_probability = 0.005
 
 class DoubleDeepQAgent:
@@ -105,7 +105,7 @@ class DoubleDeepQAgent:
         return action
              
     def record_episode(self, state, action, reward, next_state, done):
-        self.episode.append([state, action, reward, next_state, int(done)])
+        self.episode.append(np.array([*state, action, reward, *next_state, int(done)]))
 
     def save_episode(self):
         episode = np.array(self.episode)
@@ -117,7 +117,11 @@ class DoubleDeepQAgent:
         NpyAppendArray(Q_VALUES_FILENAME, delete_if_exists = False).append(training_q_vectors)
 
     def process_episode(self):
-        states = np.array([self.episode[i][0] for i in range(len(self.episode))])
+        state_len = self.state_shape[0]
+
+        self.episode = self.episode[:state_len]
+
+        states = np.array([self.episode[i][:state_len] for i in range(len(self.episode))])
         q_values = self.get_Q_values_batch(states)
         
         #q_table = ld.LambdaDict(lambda state: self.get_Q_values(np.array(state)))
@@ -133,7 +137,10 @@ class DoubleDeepQAgent:
         training_q_vectors = []
         
         for step in reversed(self.episode):
-            state, action, reward, _, done = step
+            state = step[:state_len]
+            action = int(step[state_len])
+            reward = float(step[state_len + 1])
+            done = bool(step[-1])
 
             if done:#
                 q_value = 0#
@@ -146,8 +153,6 @@ class DoubleDeepQAgent:
             training_states.append(state)
             training_q_vectors.append(np.array(q_table_row))
 
-        self._reset_episode()
-
         training_states = np.array(training_states)
         training_q_vectors = np.array(training_q_vectors)
 
@@ -155,6 +160,7 @@ class DoubleDeepQAgent:
 
     def load_and_process_episode(self):
         self._reset_episode()
+        
         self.episode = np.load(EPISODES_FILENAME, mmap_mode="r")
 
         return self.process_episode()
@@ -165,7 +171,6 @@ class DoubleDeepQAgent:
         
     def train_offline(self, training_states, training_q_vectors):
         self.qNet.train(training_states, training_q_vectors)    
-        self._reset_episode()
 
     def train_on_saved_data(self):
         training_states   = np.load(STATES_FILENAME,   mmap_mode="r")

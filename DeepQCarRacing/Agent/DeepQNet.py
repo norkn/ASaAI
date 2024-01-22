@@ -81,6 +81,7 @@ class DeepQNet:
             qValues,
             batch_size = int(len(states) / self.num_batches),
             epochs = self.epochs,
+            shuffle = True,
             #verbose = 0
         )
         

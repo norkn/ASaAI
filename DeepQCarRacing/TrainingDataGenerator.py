@@ -9,8 +9,10 @@ def run():
     ddqAgent = m.make_agent(env, state_shape, action_shape)
 
     def end_episode():
-        ddqAgent.process_episode_and_save_training_data
+        nonlocal ddqAgent
+        ddqAgent.process_episode_and_save_training_data()
         ddqAgent.save_episode()
+        ddqAgent._reset_episode()
 
     m.main(env, hp.TRAINING_NUM_EPISODES, m.scripted_policy, ddqAgent.record_episode, end_episode)
     
