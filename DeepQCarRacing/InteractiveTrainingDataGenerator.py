@@ -1,4 +1,5 @@
 import pygame
+import numpy as np
 
 import Agent.Hyperparameters as hp
 
@@ -34,8 +35,7 @@ def register_input(state):
 register_input.action = 0
 
 
-def run():
-    
+def run():    
     env, state_shape, action_shape = m.make_env("human")
     
     ddqAgent = m.make_agent(env, state_shape, action_shape)
@@ -43,6 +43,7 @@ def run():
     def end_episode():
         ddqAgent.save_episode()
         ddqAgent.process_episode_and_save_training_data
+        ddqAgent._reset_episode()
 
     m.main(env, hp.TRAINING_NUM_EPISODES, register_input, ddqAgent.record_episode, end_episode)
     
