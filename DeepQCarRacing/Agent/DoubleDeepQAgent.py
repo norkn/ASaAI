@@ -107,7 +107,7 @@ class DoubleDeepQAgent:
         q_vectors = []
         
         for step in reversed(self.episode):
-            state = step[:state_len]
+            state = np.array(step[:state_len])
             action = int(step[state_len])
             reward = float(step[state_len + 1])
             next_state = step[-state_len - 1 : -2]
@@ -120,6 +120,7 @@ class DoubleDeepQAgent:
             
             q_vectors.append(np.array(q_table_row))
 
+        states = [s for s in reversed(states)]
         states = np.array(states)
         q_vectors = np.array(q_vectors)
 
@@ -136,12 +137,12 @@ class DoubleDeepQAgent:
 
     def fit_to_measured_q_values(self):
         self.reset_episode()
+
         self.episode = np.load(EPISODES_FILENAME, mmap_mode="r")
-        self.episode = self.episode[:8000]
+        self.episode = self.episode[:2000]
 
         state_len = self.state_shape[0]
-        states = np.array([self.episode[i][:state_len] for i in range(len(self.episode))])
-        
+        states = np.array([self.episode[i][:state_len] for i in range(len(self.episode))])        
 
         q_values = self.get_Q_values_batch(states)
         q_table = ld.LambdaDict(lambda state: np.zeros(self.action_shape))
@@ -155,7 +156,7 @@ class DoubleDeepQAgent:
         q_vectors = []
 
         for step in reversed(self.episode):
-            state = step[:state_len]
+            state = np.array(step[:state_len])
             action = int(step[state_len])
             reward = float(step[state_len + 1])
             done = bool(step[-1])
@@ -166,10 +167,11 @@ class DoubleDeepQAgent:
             q_value = reward + self.gamma * q_value
 
             q_table_row = q_table[tuple(state)]
-            q_table_row[action] = q_value
+            q_table_row[action] = .5 * (q_table_row[action] + q_value)
             
             q_vectors.append(np.array(q_table_row))
 
+        states = [s for s in reversed(states)]
         states = np.array(states)
         q_vectors = np.array(q_vectors)
 
