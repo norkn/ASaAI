@@ -14,7 +14,7 @@ def run():
       nonlocal total
       total += r
 
-      ddqAgent.record_episode(s, a, r, n, d)
+      #ddqAgent.record_episode(s, a, r, n, d)
 
 
     def end_episode():
@@ -23,8 +23,8 @@ def run():
       print("episode ends. total: ", total)
       total = 0
 
-      ddqAgent.save_episode()
-      ddqAgent._reset_episode()
+      #ddqAgent.save_episode()
+      ddqAgent.reset_episode()
 
     result = m.main(env, hp.RUNNING_NUM_EPISODES, ddqAgent.get_action, in_loop, end_episode)
     print(f"avg reward per episode: {result}")

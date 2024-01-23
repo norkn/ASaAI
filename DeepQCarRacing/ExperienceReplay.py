@@ -15,10 +15,10 @@ def train_on_old_data():
     # s = [e[0] for e in psq]
     # q = [e[1] for e in psq]
     
-    ddqAgent.train_offline(training_states, training_q_vectors)
+    ddqAgent.fit(training_states, training_q_vectors)
 
     ddqAgent.qNet.model.save(hp.FILENAME)
 
 
-for i in range(10):
+for i in range(2):
     train_on_old_data()

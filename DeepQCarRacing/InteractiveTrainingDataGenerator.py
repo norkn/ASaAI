@@ -1,5 +1,4 @@
 import pygame
-import numpy as np
 
 import Agent.Hyperparameters as hp
 
@@ -43,7 +42,7 @@ def run():
     def end_episode():
         ddqAgent.save_episode()
         ddqAgent.process_episode_and_save_training_data
-        ddqAgent._reset_episode()
+        ddqAgent.reset_episode()
 
     m.main(env, hp.TRAINING_NUM_EPISODES, register_input, ddqAgent.record_episode, end_episode)
     

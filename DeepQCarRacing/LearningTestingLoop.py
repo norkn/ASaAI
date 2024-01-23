@@ -2,15 +2,16 @@
 import ReinforcementLearning_epsilon as rl
 import PerformanceComparator as pc
 
-SESSIONS = 1
+SESSIONS = 10
 LEARNING_SESSIONS = 1
 
 for i in range(SESSIONS):
+    print(f"session number {i}")
     pc.run()
     
-    for i in range(LEARNING_SESSIONS):
-        rl.run()
-        print("weights saved")
+    # for i in range(LEARNING_SESSIONS):
+    #     rl.run()
+    #     print("weights saved")
     
 #%%
 import numpy as np
