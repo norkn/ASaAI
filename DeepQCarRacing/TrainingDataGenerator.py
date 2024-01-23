@@ -23,7 +23,7 @@ def run():
       nonlocal total, ddqAgent
       total += r
 
-      #ddqAgent.record_episode(s, a, r, n, d)
+      ddqAgent.record_episode(s, a, r, n, d)
 
     def end_episode():
         nonlocal total, ddqAgent
@@ -31,7 +31,7 @@ def run():
         NpyAppendArray(PATH, delete_if_exists = False).append(np.array([total]))
         total = 0
         
-        #ddqAgent.save_episode()
+        ddqAgent.save_episode()
         ddqAgent.reset_episode()
 
     scripted_result = m.main(env, hp.TRAINING_NUM_EPISODES, m.scripted_policy, in_loop, end_episode)

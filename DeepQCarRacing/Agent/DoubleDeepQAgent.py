@@ -8,7 +8,7 @@ import Agent.DeepQNet as dqn
 STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
 EPISODES_FILENAME = 'Savefiles/episodes.npy'
-q_table_lerp_speed = 0.15
+q_table_lerp_speed = 0.25
 
 class DoubleDeepQAgent:
     
@@ -94,11 +94,11 @@ class DoubleDeepQAgent:
 
     def process_episode(self):
         state_len = self.state_shape[0]
-
         states = np.array([self.episode[i][:state_len] for i in range(len(self.episode))])
-        q_values = self.get_Q_values_batch(states)
-        
+
+        q_values = self.get_Q_values_batch(states)    
         q_table = ld.LambdaDict(lambda state: 0)
+
         for i in range(len(states)):
             state = states[i]
             q_value = q_values[i]
@@ -110,10 +110,10 @@ class DoubleDeepQAgent:
             state = np.array(step[:state_len])
             action = int(step[state_len])
             reward = float(step[state_len + 1])
-            next_state = step[-state_len - 1 : -2]
+            next_state = step[-state_len - 1 : -1]
             done = bool(step[-1])
 
-            q_value = reward + self.gamma * q_table[tuple(next_state)]
+            q_value = reward + self.gamma * np.max(q_table[tuple(next_state)])
 
             q_table_row = q_table[tuple(state)]            
             q_table_row[action] = (1 - q_table_lerp_speed) * q_table_row[action] + (q_table_lerp_speed) * q_value

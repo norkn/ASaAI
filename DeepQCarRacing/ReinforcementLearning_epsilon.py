@@ -12,12 +12,12 @@ def run():
     total = 0         
     
     def in_loop(state, action, reward, next_state, done):
-        nonlocal total
+        nonlocal total, ddqAgent
         total += reward
         ddqAgent.record_episode(state, action, reward, next_state, done)
     
     def end_episode():
-        nonlocal total
+        nonlocal total, ddqAgent
         print("total reward at end of episode: ", total)
         total = 0
 
@@ -33,4 +33,4 @@ def run():
     m.main(env, hp.TRAINING_NUM_EPISODES, ddqAgent.get_action_epsilon_greedy, in_loop, end_episode)
     
     
-#run()
+run()
