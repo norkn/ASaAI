@@ -287,7 +287,7 @@ for episode in range(episodes):
         aggr_pretrain['avg'].append(average_reward_model)
         aggr_pretrain['total'].append(total_reward)
 
-np.save('Pre_Train_Rewards', total_reward)
+np.save('Pre_Train_Rewards', pretrain_rewards)
 
 # Save training_data to a file using pickl
 trainings_data_filename = "training_dataset_1000.pkl"
@@ -420,7 +420,7 @@ for episode in range(episodes):
         aggr_ep_model['avg'].append(average_reward_model)
         aggr_ep_model['total'].append(total_reward_before_RL)
 
-np.save('Model_Train_Rewards', total_reward_before_RL)
+np.save('Model_Train_Rewards', model_rewards)
 
 env.close()
 
@@ -478,7 +478,7 @@ for episode in range(episodes):
         average_reward = sum(ep_rewards[-timesteps:]) / len(ep_rewards[-timesteps:])
         aggr_ep_rewards['ep'].append(episode)
         aggr_ep_rewards['avg'].append(average_reward)
-        aggr_ep_rewards['min'].append(min(ep_rewards[-timesteps]))
+        aggr_ep_rewards['min'].append(min(ep_rewards[-timesteps:]))
         aggr_ep_rewards['total'].append(total_reward)
 
 
@@ -520,7 +520,7 @@ for episode in range(episodes):
         print("Fitting Done")
 
 model.save(RL_model_filename)
-np.save('RL_Train_Rewards', total_reward)
+np.save('RL_Train_Rewards', ep_rewards)
 
 env.close()
 print("Training done")
@@ -558,8 +558,8 @@ for episode in range(episodes):
             observation, info = env.reset()
             break
 env.close()
-MinimumY = aggr_ep_rewards['min']
-
+MinimumY = min(aggr_ep_rewards['min'])
+print(MinimumY)
 plt.plot(aggr_pretrain['ep'], aggr_pretrain['total'], label="total_pretrain")
 plt.plot(aggr_ep_model['ep'], aggr_ep_model['total'], label="total_model")
 plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['total'], label="total_RL")
