@@ -1,4 +1,7 @@
 # %% load imports und classes
+#########################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
 import cv2
 import numpy as np
 import pickle
@@ -9,35 +12,7 @@ import tensorflow as tf
 from tensorflow import keras
 import random
 import matplotlib.pyplot as plt
-
-
-# helper functions
-# Function to load training data from a file using pickle
-def load_training_data(filename):
-    """
-    Load training data from a file using pickle.
-
-    Parameters:
-    - filename (str): The name of the file to load.
-
-    Returns:
-    - list: The loaded training data or an empty list if the file is not found.
-    """
-    try:
-        print(f"Loading training data from {filename}...")
-        with open(filename, 'rb') as file:
-            loaded_data = pickle.load(file)
-            print("Training data loaded successfully.")
-            return loaded_data
-    except FileNotFoundError:
-        print(f"File {filename} not found. Initializing with an empty list.")
-        return []
-
-
-# Variables
-
-model_filename = "model.keras"
-
+from npy_append_array import NpyAppendArray
 
 class Trainingsdata_generator:
     def __init__(self):
@@ -136,7 +111,6 @@ class Trainingsdata_generator:
         vision = Trainingsdata_generator.get_vision(observation)
         return [speed, left_steering, right_steering] + list(vision)
 
-
 class Agent_state_Processor:
 
     @staticmethod
@@ -215,6 +189,59 @@ class Agent_state_Processor:
 
         return [speed, left_steering, right_steering] + list(vision)
 
+# Function to load training data from a file using pickle
+def load_training_data(filename):
+    """
+    Load training data from a file using pickle.
+
+    Parameters:
+    - filename (str): The name of the file to load.
+
+    Returns:
+    - list: The loaded training data or an empty list if the file is not found.
+    """
+    try:
+        print(f"Loading training data from {filename}...")
+        with open(filename, 'rb') as file:
+            loaded_data = pickle.load(file)
+            print("Training data loaded successfully.")
+            return loaded_data
+    except FileNotFoundError:
+        print(f"File {filename} not found. Initializing with an empty list.")
+        return []
+
+def save_file(filedata, filename):
+    try:
+        with open(filename, 'wb') as file:
+            pickle.dump(filedata, file)
+        print(f"Training data saved to {filename} successfully.")
+    except Exception as e:
+        print(f"Error occurred while saving training data to {filename}: {e}")
+
+def process_and_save_training_data(training_data):
+    q_table = defaultdict(lambda: np.zeros(5))  # actionshape = 5
+    gamma = 0.98
+    q_table_LR = 0.5
+    q_value = 0
+    for episode in training_data:
+        for step in reversed(episode):
+            state = step[0]
+            action = step[1]
+            reward = step[2]
+
+            q_value = reward + gamma * q_value
+
+            q_table[tuple(state)][action] = (1 - q_table_LR) * q_table[tuple(state)][action] + (q_table_LR) * q_value
+
+    # Save training_data to a file using pickl
+    q_table = dict(q_table)
+    
+    try:
+        with open(q_table_filename, 'wb') as file:
+            pickle.dump(q_table, file)
+        print(f"Training data saved to {q_table_filename} successfully.")
+    except Exception as e:
+        print(f"Error occurred while saving training data to {q_table_filename}: {e}")
 
 def get_dummy_action(state):
     action = 0
@@ -235,25 +262,48 @@ def get_dummy_action(state):
 
     return action
 
+# Filenames
+q_table_filename        = "Q_table_v2.pkl"
+trainings_data_filename = "training_dataset_1000_v2.pkl"
+model_filename          = "model_v2.keras"
+RL_model_filename       = "RL_Agent_v2.keras"
 
+
+#Reward Lists
+training_data = []
+ep_rewards = []
+model_rewards = []
+dummy_reward_list =[]
+
+aggr_ep_rewards = {'ep': [], 'avg': [], 'min': [], 'total': []}  # Dictionary welches die rewards pro episode abspeichert.
+aggr_ep_model   = {'ep': [], 'avg': [],            'total': []}  # Dictionary welches die rewards pro episode abspeichert.
+aggr_pretrain   = {'ep': [], 'avg': [],            'total': []}  # Dictionary welches die rewards pro episode abspeichert.
+
+
+# RL - Variables
+EPSILON = 0.10
+EPSILON_DECAY = 0.95
+GAMMA = 0.97
+ACTION_SIZE = 5
+
+trainings_info = []
+
+
+#########################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
 # %% trainingsdaten generieren
+#########################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
 env = gym.make("CarRacing-v2", continuous=False)
 
 observation, info = env.reset()
 
-episodes = 10
-timesteps = 100 #1000
+episodes = 1
+timesteps = 10 #1000
 
-training_data = []
-
-ep_rewards = []
-model_rewards = []
-pretrain_rewards =[]
-aggr_ep_rewards = {'ep': [], 'avg': [], 'min': [], 'total': []}  # Dictionary welches die rewards pro episode abspeichert.
-aggr_ep_model = {'ep': [], 'avg': [], 'total': []}  # Dictionary welches die rewards pro episode abspeichert.
-aggr_pretrain = {'ep': [], 'avg': [], 'total': []}  # Dictionary welches die rewards pro episode abspeichert.
-
-print("Starting the trainings - loop")
+print("Starting the Dummy - loop")
 # Loop too get trainingsdata
 for episode in range(episodes):
     episode_info = []  # List to store information for each timestep in the episode
@@ -274,76 +324,37 @@ for episode in range(episodes):
         episode_info.append((trainings_state, action, reward, terminated or truncated))
 
         total_reward += reward
-        pretrain_rewards.append(total_reward)
+        dummy_reward_list.append(total_reward)
 
         if terminated or truncated:
             observation, info = env.reset()
             break
-    # print(f"Gates round {episode}: {gates}")
     training_data.append(episode_info)
+
     if not episodes % 1:
-        average_reward_model = sum(pretrain_rewards[-timesteps:]) / len(pretrain_rewards[-timesteps:])
+        average_reward_model = sum(dummy_reward_list[-timesteps:]) / len(dummy_reward_list[-timesteps:])
         aggr_pretrain['ep'].append(episode)
         aggr_pretrain['avg'].append(average_reward_model)
         aggr_pretrain['total'].append(total_reward)
+print("Finished the Dummy - loop")
 
-np.save('Pre_Train_Rewards', total_reward)
-
-# Save training_data to a file using pickl
-trainings_data_filename = "training_dataset_1000.pkl"
-
-
-def save_file(filedata, filename):
-    try:
-        with open(filename, 'wb') as file:
-            pickle.dump(filedata, file)
-        print(f"Training data saved to {filename} successfully.")
-    except Exception as e:
-        print(f"Error occurred while saving training data to {filename}: {e}")
-
-
-env.close()
-
+#np.save('Dummy_Rewards', dummy_reward_list)
+save_file(dummy_reward_list,'dummy_reward_list.pkl')
 save_file(training_data, trainings_data_filename)
-print("Finished the trainings - loop")
 
-# %% generate qtable with state action pairs
-
-
+#=========================================================================================================================#
+#%% generate qtable with state action pair
+#########################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
 training_data = load_training_data(trainings_data_filename)
-
-
-def process_and_save_training_data(training_data):
-    q_table = defaultdict(lambda: np.zeros(5))  # actionshape = 5
-    gamma = 0.98
-    q_table_LR = 0.5
-    q_value = 0
-    for episode in training_data:
-        for step in reversed(episode):
-            state = step[0]
-            action = step[1]
-            reward = step[2]
-
-            q_value = reward + gamma * q_value
-
-            q_table[tuple(state)][action] = (1 - q_table_LR) * q_table[tuple(state)][action] + (q_table_LR) * q_value
-
-    # Save training_data to a file using pickl
-    q_table = dict(q_table)
-    q_table_filename = "Q_table.pkl"
-    try:
-        with open(q_table_filename, 'wb') as file:
-            pickle.dump(q_table, file)
-        print(f"Training data saved to {q_table_filename} successfully.")
-    except Exception as e:
-        print(f"Error occurred while saving training data to {q_table_filename}: {e}")
-
-
 # q_werte der trainingsdaten berechnen
 process_and_save_training_data(training_data)
-
+#=========================================================================================================================#
 # %% agent an trainingsdaten trainieren lassen
-
+#########################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
 state_shape = (265,)
 action_shape = (5,)
 
@@ -364,7 +375,7 @@ for i in range(len(layer_sizes)):
 model.add(keras.layers.Dense(action_shape[0], activation=activation_functions[-1], kernel_initializer=init))
 model.compile(loss=loss, optimizer=optimizer(learning_rate=learning_rate))
 
-q_table = load_training_data("Q_table.pkl")
+q_table = load_training_data(q_table_filename)
 
 states = np.array(list(q_table))
 
@@ -384,15 +395,13 @@ history = model.fit(  # returns history of the training
 model.save(model_filename)
 
 env = gym.make("CarRacing-v2", continuous=False)
-
 observation, info = env.reset()
-
-episodes = 10       #15
-timesteps = 100 #1000
+episodes  = 1       
+timesteps = 10
 
 # Loop to train the agent further with trained model
 for episode in range(episodes):
-    total_reward_before_RL = 0
+    pre_train_reward_list = 0
     print(f"start Episode {episode + 1}")
     for timestep in range(timesteps):
 
@@ -404,8 +413,8 @@ for episode in range(episodes):
 
         next_state = np.array(Agent_state_Processor.get_state(observation))
 
-        total_reward_before_RL += reward
-        model_rewards.append(total_reward_before_RL)
+        pre_train_reward_list += reward
+        model_rewards.append(pre_train_reward_list)
 
         # Update the current state
         state = next_state
@@ -418,43 +427,42 @@ for episode in range(episodes):
         average_reward_model = sum(model_rewards[-timesteps:]) / len(model_rewards[-timesteps:])
         aggr_ep_model['ep'].append(episode)
         aggr_ep_model['avg'].append(average_reward_model)
-        aggr_ep_model['total'].append(total_reward_before_RL)
+        aggr_ep_model['total'].append(pre_train_reward_list)
 
-np.save('Model_Train_Rewards', total_reward_before_RL)
-
+#np.save('Model_Train_Rewards', pre_train_reward_list)
+save_file(model_rewards, "pre_train_reward_list.pkl")
 env.close()
+#=========================================================================================================================#
 
-# %% agent via RL sich verbessern lassen
-
+#%% agent via RL sich verbessern lassen
+#########################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
 print("Start RL training")
 
 env = gym.make("CarRacing-v2", continuous=False)
 observation, info = env.reset()
 
 model = keras.models.load_model(model_filename)
-RL_model_filename = "RL_Agent.keras"
-episodes = 10  # 500
-timesteps = 100 #100
 
-epsilon = 0.10
-epsilon_decay = 0.95
-gamma = 0.97
-action_size = 5
-trainings_info = []
+episodes = 1  # 500
+timesteps = 10 #100
+
 
 # Loop to train the agent further with RL
 for episode in range(episodes):
-    episode_info = []  # List to store information for each timestep in the episode
-    total_reward = 0
     print(f"start Episode {episode + 1}")
 
-    if epsilon > 0.01: epsilon *= epsilon_decay
+    episode_info = []  # List to store information for each timestep in the episode
+    total_reward = 0
+
+    if EPSILON > 0.01: EPSILON *= EPSILON_DECAY
     for timestep in range(timesteps):
 
         state = np.array(Agent_state_Processor.get_state(observation))
 
-        if np.random.rand() < epsilon:
-            action = np.random.choice(action_size)
+        if np.random.rand() < EPSILON:
+            action = np.random.choice(ACTION_SIZE)
         else:
             action = np.argmax(model.predict(state.reshape(1, *state.shape), verbose=None)[0])
 
@@ -472,13 +480,14 @@ for episode in range(episodes):
         if terminated or truncated:
             observation, info = env.reset()
             break
+
     trainings_info.append(episode_info)
 
     if not episodes % 1:
         average_reward = sum(ep_rewards[-timesteps:]) / len(ep_rewards[-timesteps:])
         aggr_ep_rewards['ep'].append(episode)
         aggr_ep_rewards['avg'].append(average_reward)
-        aggr_ep_rewards['min'].append(min(ep_rewards[-timesteps]))
+        aggr_ep_rewards['min'].append(min(ep_rewards[-timesteps:]))
         aggr_ep_rewards['total'].append(total_reward)
 
 
@@ -501,7 +510,7 @@ for episode in range(episodes):
             for i in range(len(info) - 1):
                 state, action, reward = info[i]
                 target = q_value[i]
-                target[action] = reward + gamma * np.max(q_value[i + 1])
+                target[action] = reward + GAMMA * np.max(q_value[i + 1])
                 # print(f"Target = {target} Shape = {target.shape}")
                 target_list.append(target)
 
@@ -518,23 +527,43 @@ for episode in range(episodes):
         model.fit(state_list, target_list, batch_size=10, epochs=1, verbose=None)
         trainings_info = []
         print("Fitting Done")
-
-model.save(RL_model_filename)
-np.save('RL_Train_Rewards', total_reward)
-
+        model.save(RL_model_filename)
+        
 env.close()
-print("Training done")
-#
+print("RL Training done")
+
+save_file(ep_rewards, "rl_reward_list.pkl")
+#np.save('RL_Train_Rewards', ep_rewards)
+#=========================================================================================================================#
 
 # %% agent ueberpruefen und auswerten
+#########################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
+MinimumY = min(aggr_ep_rewards['min'])
 
+dummy_reward_list = load_training_data('dummy_reward_list.pkl')
+pre_trained_reward_list = load_training_data("pre_train_reward_list.pkl")
+rl_reward_list = load_training_data("rl_reward_list.pkl")
+
+x = np.arange(len(dummy_reward_list))
+x1 = np.arange(len(pre_trained_reward_list))
+x2 = np.arange(len(rl_reward_list))
+plt.plot(x   , dummy_reward_list         , label="total_pretrain")
+plt.plot(x1    , pre_trained_reward_list   , label="total_model")
+plt.plot(x2  , rl_reward_list            , label="total_RL")
+plt.ylim(MinimumY, 950)
+plt.xlabel("episodes")
+plt.ylabel("reward")
+plt.legend(loc=4)
+plt.show()
 
 env = gym.make("CarRacing-v2", render_mode="human", continuous=False)
 
 observation, info = env.reset()
 
-episodes = 10
-timesteps = 100
+episodes = 1000
+timesteps = 1000
 
 # Loop to train the agent further with RL
 for episode in range(episodes):
@@ -558,13 +587,4 @@ for episode in range(episodes):
             observation, info = env.reset()
             break
 env.close()
-MinimumY = aggr_ep_rewards['min']
-
-plt.plot(aggr_pretrain['ep'], aggr_pretrain['total'], label="total_pretrain")
-plt.plot(aggr_ep_model['ep'], aggr_ep_model['total'], label="total_model")
-plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['total'], label="total_RL")
-plt.ylim(MinimumY, 950)
-plt.xlabel("episodes")
-plt.ylabel("reward")
-plt.legend(loc=4)
-plt.show()
+#================================================================================================#
