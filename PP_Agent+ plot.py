@@ -338,8 +338,28 @@ for episode in range(episodes):
         aggr_pretrain['total'].append(total_reward)
 print("Finished the Dummy - loop")
 
+
 #np.save('Dummy_Rewards', dummy_reward_list)
 save_file(dummy_reward_list,'dummy_reward_list.pkl')
+
+#np.save('Pre_Train_Rewards', pretrain_rewards)
+
+# Save training_data to a file using pickl
+trainings_data_filename = "training_dataset_1000.pkl"
+
+
+def save_file(filedata, filename):
+    try:
+        with open(filename, 'wb') as file:
+            pickle.dump(filedata, file)
+        print(f"Training data saved to {filename} successfully.")
+    except Exception as e:
+        print(f"Error occurred while saving training data to {filename}: {e}")
+
+
+env.close()
+
+
 save_file(training_data, trainings_data_filename)
 
 #=========================================================================================================================#
@@ -428,6 +448,10 @@ for episode in range(episodes):
         aggr_ep_model['ep'].append(episode)
         aggr_ep_model['avg'].append(average_reward_model)
         aggr_ep_model['total'].append(pre_train_reward_list)
+        #aggr_ep_model['total'].append(total_reward_before_RL)
+
+np.save('Model_Train_Rewards', model_rewards)
+
 
 #np.save('Model_Train_Rewards', pre_train_reward_list)
 save_file(model_rewards, "pre_train_reward_list.pkl")
@@ -527,8 +551,15 @@ for episode in range(episodes):
         model.fit(state_list, target_list, batch_size=10, epochs=1, verbose=None)
         trainings_info = []
         print("Fitting Done")
+
         model.save(RL_model_filename)
         
+
+
+#model.save(RL_model_filename)
+np.save('RL_Train_Rewards', ep_rewards)
+
+
 env.close()
 print("RL Training done")
 
@@ -587,4 +618,17 @@ for episode in range(episodes):
             observation, info = env.reset()
             break
 env.close()
+
 #================================================================================================#
+
+MinimumY = min(aggr_ep_rewards['min'])
+print(MinimumY)
+plt.plot(aggr_pretrain['ep'], aggr_pretrain['total'], label="total_pretrain")
+plt.plot(aggr_ep_model['ep'], aggr_ep_model['total'], label="total_model")
+plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['total'], label="total_RL")
+plt.ylim(MinimumY, 950)
+plt.xlabel("episodes")
+plt.ylabel("reward")
+plt.legend(loc=4)
+plt.show()
+
