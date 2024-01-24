@@ -9,6 +9,7 @@ STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
 EPISODES_FILENAME = 'Savefiles/episodes.npy'
 q_table_lerp_speed = 0.25
+SAMPLE_SIZE = 4000
 
 class DoubleDeepQAgent:
     
@@ -94,19 +95,25 @@ class DoubleDeepQAgent:
 
     def process_episode(self):
         state_len = self.state_shape[0]
-        states = np.array([self.episode[i][:state_len] for i in range(len(self.episode))])
+        states = np.array([step[:state_len] for step in self.episode])
+        next_states = np.array([step[-state_len - 1 : -1] for step in self.episode])
 
-        q_values = self.get_Q_values_batch(states)    
-        q_table = ld.LambdaDict(lambda state: 0)
+        def fill_q_dict(q_table, s):
+            q_values = self.get_Q_values_batch(s)    
+            for i in range(len(s)):
+                state = s[i]
+                q_value = q_values[i]
+                q_table[tuple(state)] = q_value
 
-        for i in range(len(states)):
-            state = states[i]
-            q_value = q_values[i]
-            q_table[tuple(state)] = q_value
+            return q_table
+
+        q_table = ld.LambdaDict(lambda state: np.zeros(self.action_shape))
+        fill_q_dict(q_table, states)
+        fill_q_dict(q_table, next_states)
 
         q_vectors = []
         
-        for step in reversed(self.episode):
+        for step in self.episode:
             state = np.array(step[:state_len])
             action = int(step[state_len])
             reward = float(step[state_len + 1])
@@ -120,7 +127,6 @@ class DoubleDeepQAgent:
             
             q_vectors.append(np.array(q_table_row))
 
-        states = [s for s in reversed(states)]
         states = np.array(states)
         q_vectors = np.array(q_vectors)
 
@@ -129,6 +135,8 @@ class DoubleDeepQAgent:
     def load_and_process_episode(self):
         self.reset_episode()     
         self.episode = np.load(EPISODES_FILENAME, mmap_mode="r")
+
+        self.episode = np.random.default_rng().choice(self.episode, size=SAMPLE_SIZE, replace=False)
 
         return self.process_episode()
 
@@ -139,7 +147,7 @@ class DoubleDeepQAgent:
         self.reset_episode()
 
         self.episode = np.load(EPISODES_FILENAME, mmap_mode="r")
-        self.episode = self.episode[:2000]
+        self.episode = self.episode[:SAMPLE_SIZE]
 
         state_len = self.state_shape[0]
         states = np.array([self.episode[i][:state_len] for i in range(len(self.episode))])        

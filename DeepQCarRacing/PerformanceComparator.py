@@ -15,7 +15,7 @@ def set_env_seed(env, seed):
 def run():
     seed = 0#int(time.time())
     
-    env, state_shape, action_shape = m.make_env("human")#None)
+    env, state_shape, action_shape = m.make_env(None)
     set_env_seed(env, seed)
     
     ddqAgent = m.load_agent(env, state_shape, action_shape)

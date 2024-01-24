@@ -2,6 +2,8 @@ import Agent.Hyperparameters as hp
 
 import Main as m
 
+from time import localtime, strftime
+
 def run():
     
     env, state_shape, action_shape = m.make_env(None)
@@ -18,7 +20,7 @@ def run():
     
     def end_episode():
         nonlocal total, ddqAgent
-        print("total reward at end of episode: ", total)
+        print(strftime("%H:%M:%S", localtime()), "total reward at end of episode: ", total)
         total = 0
 
         ddqAgent.decay_epsilon()
