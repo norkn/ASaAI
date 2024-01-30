@@ -3,16 +3,13 @@ from npy_append_array import NpyAppendArray
 from time import localtime, strftime
 
 import Agent.Hyperparameters as hp
-
 import Main as m
 
 def set_env_seed(env, seed):
     np.random.seed(int(seed))
     env.np_random = np.random
 
-def run(num_episodes):
-    seed = 0
-    
+def run(num_episodes=100, seed=0):    
     env, state_shape, action_shape = m.make_env(None)
     set_env_seed(env, seed)
     

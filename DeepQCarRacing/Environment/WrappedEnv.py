@@ -19,13 +19,6 @@ class WrappedEnv(Wrapper):
         return op.ObservationProcessor.get_state(obs)
 
     def _transform_reward(self, reward, obs):
-        return reward
-        #if reward == 100: reward = 1
-        reward -= obs[8] #being on grass gets punished more
-        reward -= int(obs[0] < 2) #being slow gets punished
-        reward += int(obs[3] == 0 and obs[2] > 1) #turning right gets incentivized when near vision left is grass
-        reward += int(obs[4] == 0 and obs[1] > 1) #turning left gets incentivized when near vision right is grass
-
         return reward 
 
     def step(self, action):

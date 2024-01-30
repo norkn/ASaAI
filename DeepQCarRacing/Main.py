@@ -1,7 +1,7 @@
 import gymnasium as gym
 import tensorflow as tf
 
-import Agent.DoubleDeepQAgent as ddqa
+import Agent.DeepQAgent as ddqa
 import Agent.Hyperparameters as hp
 
 from Environment import WrappedEnv as we
@@ -34,7 +34,7 @@ def make_env(render_mode):
     return env, state_shape, action_shape
 
 def make_agent(env, state_shape, action_shape):
-    ddqAgent = ddqa.DoubleDeepQAgent(env, 
+    ddqAgent = ddqa.DeepQAgent(env, 
                                      state_shape,
                                      action_shape,
                                      hp.LAYER_SIZES, 
@@ -51,7 +51,7 @@ def make_agent(env, state_shape, action_shape):
     return ddqAgent
 
 def load_agent(env, state_shape, action_shape):
-    ddqAgent = ddqa.DoubleDeepQAgent.load(env,
+    ddqAgent = ddqa.DeepQAgent.load(env,
                                           state_shape,
                                           action_shape,
                                           hp.MODEL_PATH,
@@ -75,9 +75,9 @@ def main(env, num_episodes, get_action, in_loop, end_episode):
             action = get_action(state)
 
             next_state, reward, terminated, truncated, info = env.step(action)
-        #####<
+            
             in_loop(state, action, reward, next_state, terminated or truncated)
-        ########>
+            
             state = next_state
 
             total_reward +=  reward
@@ -87,7 +87,6 @@ def main(env, num_episodes, get_action, in_loop, end_episode):
                 break
 
         end_episode()
-
 
     env.close()
 

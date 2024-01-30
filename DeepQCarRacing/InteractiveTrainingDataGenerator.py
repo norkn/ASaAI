@@ -1,7 +1,6 @@
 import pygame
 
 import Agent.Hyperparameters as hp
-
 import Main as m
 
 def register_input(state):

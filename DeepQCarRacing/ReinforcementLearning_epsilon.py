@@ -1,8 +1,7 @@
-import Agent.Hyperparameters as hp
-
-import Main as m
-
 from time import localtime, strftime
+
+import Agent.Hyperparameters as hp
+import Main as m
 
 def run():
     

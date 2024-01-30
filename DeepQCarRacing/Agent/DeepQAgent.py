@@ -3,10 +3,10 @@ from npy_append_array import NpyAppendArray
 
 from collections import defaultdict
 
-import Agent.DeepQNet as dqn
+import Agent.NeuralNetwork as dqn
 import Agent.Hyperparameters as hp
 
-class DoubleDeepQAgent:
+class DeepQAgent:
     
     def reset_episode(self):
         self.episode = []
@@ -55,7 +55,7 @@ class DoubleDeepQAgent:
         gamma, 
         epsilon_decay):
 
-        model = DoubleDeepQAgent(env, state_shape, action_shape, *[None]*6, num_batches, epochs, gamma, epsilon_decay)
+        model = DeepQAgent(env, state_shape, action_shape, *[None]*6, num_batches, epochs, gamma, epsilon_decay)
         
         model.qNet      = dqn.DeepQNet.load(path, num_batches, epochs)
         model.targetNet = dqn.DeepQNet.load(path, num_batches, epochs)

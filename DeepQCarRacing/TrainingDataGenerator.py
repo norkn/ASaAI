@@ -2,7 +2,6 @@ import numpy as np
 from npy_append_array import NpyAppendArray
 
 import Agent.Hyperparameters as hp
-
 import Main as m
 
 PATH = 'Savefiles/scripted_results.npy'

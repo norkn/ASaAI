@@ -1,4 +1,9 @@
 #%% Clear saved Model and RL results
+from pathlib import Path
+import Agent.Hyperparameters as hp
+
+Path(hp.MODEL_PATH).unlink()
+Path(hp.RL_RESULTS_PATH).unlink()
 
 #%% Experience Replay
 import ExperienceReplay
@@ -13,10 +18,11 @@ Demo.run(1)
 #%% Compare Performance
 import PerformanceComparator
 
-PerformanceComparator.run(200)
+PerformanceComparator.run(num_episodes=100, seed=1)
 
 #%% Visualize
-import Visualize
+import Visualizer
 
-Visualize.run()
+Visualizer.run()
 #%% Render Video
+from gymnasium.wrappers import RecordVideo
