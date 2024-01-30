@@ -8,7 +8,7 @@ Path(hp.RL_RESULTS_PATH).unlink()
 #%% Experience Replay
 import ExperienceReplay
 
-ExperienceReplay.run(num_episodes=100, sample_size=4000, load_agent=False)#True)
+ExperienceReplay.run(num_episodes=500, sample_size=4000, load_agent=False)#True)
 
 #%% Demo
 import Demo
@@ -24,5 +24,3 @@ PerformanceComparator.run(num_episodes=100, seed=1)
 import Visualizer
 
 Visualizer.run()
-#%% Render Video
-from gymnasium.wrappers import RecordVideo
