@@ -1,6 +1,6 @@
 import numpy as np
 from npy_append_array import NpyAppendArray
-import time
+from time import strftime, localtime
 
 import Agent.Hyperparameters as hp
 
@@ -13,7 +13,7 @@ def set_env_seed(env, seed):
   env.np_random = np.random
 
 def run():
-    seed = 0#int(time.time())
+    seed = 1#int(time.time())
     
     env, state_shape, action_shape = m.make_env(None)
     set_env_seed(env, seed)
@@ -30,7 +30,7 @@ def run():
 
     def end_episode():
       nonlocal total, ddqAgent
-      print("RL episode ends. total: ", total)
+      print(strftime("%H:%M:%S", localtime()), "RL episode ends. total: ", total)
       NpyAppendArray(PATH, delete_if_exists = False).append(np.array([total]))
       total = 0
 

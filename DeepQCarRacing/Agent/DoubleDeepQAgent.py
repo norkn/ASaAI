@@ -1,15 +1,14 @@
 import numpy as np
 from npy_append_array import NpyAppendArray
-
-from Utils import LambdaDict as ld
+from collections import defaultdict
 
 import Agent.DeepQNet as dqn
 
 STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
 EPISODES_FILENAME = 'Savefiles/episodes.npy'
-q_table_lerp_speed = 0.25
-SAMPLE_SIZE = 4000
+q_table_lerp_speed = .8 #0.25
+SAMPLE_SIZE = 500
 
 class DoubleDeepQAgent:
     
@@ -45,7 +44,7 @@ class DoubleDeepQAgent:
         self.reset_episode()
     
         self.gamma = gamma
-        self.epsilon = .2
+        self.epsilon = .5
         self.epsilon_decay = epsilon_decay
         
 
@@ -71,6 +70,9 @@ class DoubleDeepQAgent:
         return self.qNet.run_batch(states)
 
     def get_Q_values(self, state):
+        qs = self.qNet.run(state)
+        print(qs)
+        return qs
         return self.qNet.run(state)
     
     def get_action(self, state):        
@@ -105,14 +107,10 @@ class DoubleDeepQAgent:
                 q_value = q_values[i]
                 q_table[tuple(state)] = q_value
 
-            return q_table
-
-        q_table = ld.LambdaDict(lambda state: np.zeros(self.action_shape))
+        q_table = defaultdict(lambda: np.zeros(self.action_shape))
         fill_q_dict(q_table, states)
         fill_q_dict(q_table, next_states)
 
-        q_vectors = []
-        
         for step in self.episode:
             state = np.array(step[:state_len])
             action = int(step[state_len])
@@ -121,11 +119,22 @@ class DoubleDeepQAgent:
             done = bool(step[-1])
 
             q_value = reward + self.gamma * np.max(q_table[tuple(next_state)])
+            if done:
+                q_value = reward
+                
+            print('state', state)
 
-            q_table_row = q_table[tuple(state)]            
+            q_table_row = q_table[tuple(state)]
+            print('q value row', q_table_row)
             q_table_row[action] = (1 - q_table_lerp_speed) * q_table_row[action] + (q_table_lerp_speed) * q_value
+            print('updated row', q_table_row)
             
-            q_vectors.append(np.array(q_table_row))
+        states = []
+        q_vectors = []
+        
+        for key in q_table.keys():
+            states.append(key)
+            q_vectors.append(np.array(q_table[key]))
 
         states = np.array(states)
         q_vectors = np.array(q_vectors)
@@ -147,13 +156,13 @@ class DoubleDeepQAgent:
         self.reset_episode()
 
         self.episode = np.load(EPISODES_FILENAME, mmap_mode="r")
-        self.episode = self.episode[:SAMPLE_SIZE]
+        self.episode = self.episode[:1000]
 
         state_len = self.state_shape[0]
         states = np.array([self.episode[i][:state_len] for i in range(len(self.episode))])        
 
         q_values = self.get_Q_values_batch(states)
-        q_table = ld.LambdaDict(lambda state: np.zeros(self.action_shape))
+        q_table = defaultdict(lambda: np.zeros(self.action_shape))
 
         for i in range(len(states)):
             state = states[i]

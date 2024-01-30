@@ -8,8 +8,8 @@ def run():
     
     env, state_shape, action_shape = m.make_env(None)
     
-    #ddqAgent = m.make_agent(env, state_shape, action_shape)
-    ddqAgent = m.load_agent(env, state_shape, action_shape)
+    ddqAgent = m.make_agent(env, state_shape, action_shape)
+    # ddqAgent = m.load_agent(env, state_shape, action_shape)
     
     total = 0         
     
@@ -23,11 +23,11 @@ def run():
         print(strftime("%H:%M:%S", localtime()), "total reward at end of episode: ", total)
         total = 0
 
-        ddqAgent.decay_epsilon()
+        # ddqAgent.decay_epsilon()
 
-        training_states, training_q_vectors = ddqAgent.process_episode()
-        ddqAgent.fit(training_states, training_q_vectors)
-        ddqAgent.qNet.model.save(hp.FILENAME)
+        # training_states, training_q_vectors = ddqAgent.process_episode()
+        # ddqAgent.fit(training_states, training_q_vectors)
+        # ddqAgent.qNet.model.save(hp.FILENAME)
         
         ddqAgent.save_episode()
         ddqAgent.reset_episode()

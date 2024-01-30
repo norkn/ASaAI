@@ -26,7 +26,7 @@ def run():
       ddqAgent.save_episode()
       ddqAgent.reset_episode()
 
-    result = m.main(env, hp.RUNNING_NUM_EPISODES, ddqAgent.get_action, in_loop, end_episode)
+    result = m.main(env, 50, ddqAgent.get_action, in_loop, end_episode)
     print(f"avg reward per episode: {result}")
     
 run()

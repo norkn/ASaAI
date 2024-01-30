@@ -25,8 +25,8 @@ def nop(*args):
         return
 
 def make_env(render_mode):
-    env = gym.make(hp.ENV, render_mode = render_mode, continuous = False)
-    env = we.WrappedEnv(env)
+    env = gym.make(hp.ENV, render_mode = render_mode)#, continuous = False)
+    #env = we.WrappedEnv(env)
     
     state_shape = env.observation_space.shape    
     action_shape = (env.action_space.n, )
@@ -71,7 +71,7 @@ def main(env, num_episodes, get_action, in_loop, end_episode):
     terminated, truncated = False, False
     
     for i in range(num_episodes):
-        for i in range(hp.MAX_STEPS_PER_EPISODE):
+        for k in range(hp.MAX_STEPS_PER_EPISODE):
             action = get_action(state)
 
             next_state, reward, terminated, truncated, info = env.step(action)
