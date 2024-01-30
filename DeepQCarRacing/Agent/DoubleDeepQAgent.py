@@ -1,14 +1,14 @@
 import numpy as np
 from npy_append_array import NpyAppendArray
 
-from Utils import LambdaDict as ld
+from collections import defaultdict
 
 import Agent.DeepQNet as dqn
 
 STATES_FILENAME = 'Savefiles/training_states.npy'
 Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
 EPISODES_FILENAME = 'Savefiles/episodes.npy'
-q_table_lerp_speed = 0.25
+q_table_lerp_speed = 0.5
 SAMPLE_SIZE = 4000
 
 class DoubleDeepQAgent:
@@ -107,7 +107,7 @@ class DoubleDeepQAgent:
 
             return q_table
 
-        q_table = ld.LambdaDict(lambda state: np.zeros(self.action_shape))
+        q_table = defaultdict(lambda: np.zeros(self.action_shape))
         fill_q_dict(q_table, states)
         fill_q_dict(q_table, next_states)
 
@@ -121,12 +121,18 @@ class DoubleDeepQAgent:
             done = bool(step[-1])
 
             q_value = reward + self.gamma * np.max(q_table[tuple(next_state)])
+            if done:
+                q_value = reward
 
             q_table_row = q_table[tuple(state)]            
             q_table_row[action] = (1 - q_table_lerp_speed) * q_table_row[action] + (q_table_lerp_speed) * q_value
             
-            q_vectors.append(np.array(q_table_row))
+        states = []
+        q_vectors = []
 
+        for key in q_table.keys():
+            states.append(key)
+            q_vectors.append(np.array(q_table[key]))
         states = np.array(states)
         q_vectors = np.array(q_vectors)
 
@@ -153,7 +159,7 @@ class DoubleDeepQAgent:
         states = np.array([self.episode[i][:state_len] for i in range(len(self.episode))])        
 
         q_values = self.get_Q_values_batch(states)
-        q_table = ld.LambdaDict(lambda state: np.zeros(self.action_shape))
+        q_table = defaultdict(lambda: np.zeros(self.action_shape))
 
         for i in range(len(states)):
             state = states[i]
