@@ -2,16 +2,18 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-rl_results = np.load('Savefiles/rl_results.npy',   mmap_mode="r")
-scripted_results = np.load('Savefiles/scripted_results.npy',   mmap_mode="r")
+import Agent.Hyperparameters as hp
+
+rl_results = np.load(hp.RL_RESULTS_PATH,   mmap_mode="r")
+scripted_results = np.load(hp.SCRIPTED_RESULTS_PATH,   mmap_mode="r")
 
 len_r = min(len(rl_results), len(scripted_results))
 
 rl_results = rl_results[:len_r]
 scripted_results = scripted_results[:len_r]
 
-print(f"rl avg: {np.average(rl_results)}")#np.sum(rl_results) / len(rl_results)}")
-print(f"scripted avg: {np.average(scripted_results)}")#np.sum(scripted_results) / len(scripted_results)}")
+print(f"rl avg: {np.average(rl_results)}")
+print(f"scripted avg: {np.average(scripted_results)}")
 
 results_diff = rl_results - scripted_results
 
@@ -29,12 +31,3 @@ ax.set(xlim=(0, len_r),
        ylim=(0, 1000))
 
 plt.show()
-
-#%%
-import numpy as np
-rl_results = np.load('Savefiles/rl_results.npy',   mmap_mode="r")
-scripted_results = np.load('Savefiles/scripted_results.npy',   mmap_mode="r")
-len_r = min(len(rl_results), len(scripted_results))
-
-for r in zip(scripted_results, rl_results):
-       print(r)

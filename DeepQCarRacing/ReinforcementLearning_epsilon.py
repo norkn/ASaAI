@@ -25,9 +25,9 @@ def run():
 
         ddqAgent.decay_epsilon()
 
-        training_states, training_q_vectors = ddqAgent.process_episode()
+        training_states, training_q_vectors = ddqAgent.process_steps(ddqAgent.episode)
         ddqAgent.fit(training_states, training_q_vectors)
-        ddqAgent.qNet.model.save(hp.FILENAME)
+        ddqAgent.qNet.model.save(hp.MODEL_PATH)
         
         ddqAgent.save_episode()
         ddqAgent.reset_episode()

@@ -54,7 +54,7 @@ def load_agent(env, state_shape, action_shape):
     ddqAgent = ddqa.DoubleDeepQAgent.load(env,
                                           state_shape,
                                           action_shape,
-                                          hp.FILENAME,
+                                          hp.MODEL_PATH,
                                           hp.NUM_BATCHES,
                                           hp.EPOCHS,
                                           hp.GAMMA, 

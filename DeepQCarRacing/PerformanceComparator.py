@@ -1,19 +1,17 @@
 import numpy as np
 from npy_append_array import NpyAppendArray
-import time
+from time import localtime, strftime
 
 import Agent.Hyperparameters as hp
 
 import Main as m
 
-PATH = 'Savefiles/rl_results.npy'
-
 def set_env_seed(env, seed):
-  np.random.seed(int(seed))
-  env.np_random = np.random
+    np.random.seed(int(seed))
+    env.np_random = np.random
 
-def run():
-    seed = 0#int(time.time())
+def run(num_episodes):
+    seed = 0
     
     env, state_shape, action_shape = m.make_env(None)
     set_env_seed(env, seed)
@@ -30,13 +28,12 @@ def run():
 
     def end_episode():
       nonlocal total, ddqAgent
-      print("RL episode ends. total: ", total)
-      NpyAppendArray(PATH, delete_if_exists = False).append(np.array([total]))
+
+      print(strftime("%H:%M:%S", localtime()), "RL episode ends. total: ", total)
+      NpyAppendArray(hp.RL_RESULTS_PATH, delete_if_exists = True).append(np.array([total]))
       total = 0
 
       ddqAgent.save_episode()
       ddqAgent.reset_episode()
       
-    rl_result = m.main(env, hp.TRAINING_NUM_EPISODES, ddqAgent.get_action, in_loop, end_episode)
-    
-run()
+    rl_result = m.main(env, num_episodes, ddqAgent.get_action, in_loop, end_episode)

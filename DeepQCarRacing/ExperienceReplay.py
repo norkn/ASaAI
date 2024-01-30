@@ -1,18 +1,27 @@
+import numpy as np
+
 import Agent.Hyperparameters as hp
 import Main as m
 
-import numpy as np
+def experience_replay(ddqAgent, sample_size):
+    episode = ddqAgent.load_episode()
+    episode = np.random.default_rng().choice(episode, size=sample_size, replace=False)
 
-def train_on_old_data():
+    states, q_vectors = ddqAgent.process_steps(episode)
+    ddqAgent.fit(states, q_vectors)
+
+    ddqAgent.qNet.model.save(hp.MODEL_PATH)
+
+
+def run(num_episodes=100, sample_size=4000, load_agent = True):
     env, state_shape, action_shape = m.make_env(None)
-    ddqAgent = m.load_agent(env, state_shape, action_shape)
 
-    training_states, training_q_vectors = ddqAgent.load_and_process_episode()
-       
-    ddqAgent.fit(training_states, training_q_vectors)
+    if load_agent:
+        ddqAgent = m.load_agent(env, state_shape, action_shape)
+    else:
+        ddqAgent = m.make_agent(env, state_shape, action_shape)
 
-    ddqAgent.qNet.model.save(hp.FILENAME)
+    for i in range(num_episodes):
+        print(f"training {i}/{num_episodes}")
+        experience_replay(ddqAgent, sample_size)
 
-
-for i in range(100):
-    train_on_old_data()

@@ -9,5 +9,5 @@ ddqAgent = m.make_agent(env, state_shape, action_shape)
 
 ddqAgent.fit_to_measured_q_values()
 
-ddqAgent.qNet.model.save(hp.FILENAME)
+ddqAgent.qNet.model.save(hp.MODEL_PATH)
 print('weights saved, trained on saved data')

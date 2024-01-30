@@ -4,12 +4,7 @@ from npy_append_array import NpyAppendArray
 from collections import defaultdict
 
 import Agent.DeepQNet as dqn
-
-STATES_FILENAME = 'Savefiles/training_states.npy'
-Q_VALUES_FILENAME = 'Savefiles/training_target_vectors.npy'
-EPISODES_FILENAME = 'Savefiles/episodes.npy'
-q_table_lerp_speed = 0.5
-SAMPLE_SIZE = 4000
+import Agent.Hyperparameters as hp
 
 class DoubleDeepQAgent:
     
@@ -90,15 +85,25 @@ class DoubleDeepQAgent:
 
     def save_episode(self):
         episode = np.array(self.episode)
-        NpyAppendArray(EPISODES_FILENAME, delete_if_exists = False).append(episode)
+        NpyAppendArray(hp.EPISODES_FILENAME, delete_if_exists = False).append(episode)
         self.reset_episode()
 
-    def process_episode(self):
-        state_len = self.state_shape[0]
-        states = np.array([step[:state_len] for step in self.episode])
-        next_states = np.array([step[-state_len - 1 : -1] for step in self.episode])
+    def load_episode(self):
+        episode = np.load(hp.EPISODES_FILENAME, mmap_mode="r")
+        return episode
 
-        def fill_q_dict(q_table, s):
+    def _get_sarnd(self, step):
+        state_len = self.state_shape[0]
+
+        state      = np.array(step[:state_len])
+        action     = int     (step[state_len])
+        reward     = float   (step[state_len + 1])
+        next_state = np.array(step[-state_len - 1 : -1])
+        done       = bool    (step[-1])
+
+        return state, action, reward, next_state, done
+
+    def _fill_q_dict(self, q_table, s):
             q_values = self.get_Q_values_batch(s)    
             for i in range(len(s)):
                 state = s[i]
@@ -107,73 +112,58 @@ class DoubleDeepQAgent:
 
             return q_table
 
-        q_table = defaultdict(lambda: np.zeros(self.action_shape))
-        fill_q_dict(q_table, states)
-        fill_q_dict(q_table, next_states)
-
-        q_vectors = []
-        
-        for step in self.episode:
-            state = np.array(step[:state_len])
-            action = int(step[state_len])
-            reward = float(step[state_len + 1])
-            next_state = step[-state_len - 1 : -1]
-            done = bool(step[-1])
-
-            q_value = reward + self.gamma * np.max(q_table[tuple(next_state)])
-            if done:
-                q_value = reward
-
-            q_table_row = q_table[tuple(state)]            
-            q_table_row[action] = (1 - q_table_lerp_speed) * q_table_row[action] + (q_table_lerp_speed) * q_value
-            
+    def _get_sq_from_q_dict(self, q_table):
         states = []
         q_vectors = []
 
         for key in q_table.keys():
             states.append(key)
             q_vectors.append(np.array(q_table[key]))
+
         states = np.array(states)
         q_vectors = np.array(q_vectors)
 
         return states, q_vectors
 
-    def load_and_process_episode(self):
-        self.reset_episode()     
-        self.episode = np.load(EPISODES_FILENAME, mmap_mode="r")
+    def process_steps(self, steps):
+        states      = np.array([self._get_sarnd(step)[0] for step in steps])
+        next_states = np.array([self._get_sarnd(step)[3] for step in steps])
 
-        self.episode = np.random.default_rng().choice(self.episode, size=SAMPLE_SIZE, replace=False)
+        q_table = defaultdict(lambda: np.zeros(self.action_shape))
+        q_table = self._fill_q_dict(q_table, states)
+        q_table = self._fill_q_dict(q_table, next_states)
 
-        return self.process_episode()
+        for step in steps:
+            state, action, reward, next_state, done = self._get_sarnd(step)
+
+            q_value = reward + self.gamma * np.max(q_table[tuple(next_state)])
+            if done:
+                q_value = reward
+
+            q_table_row = q_table[tuple(state)]            
+            q_table_row[action] = (1 - hp.Q_TABLE_LERP_SPEED) * q_table_row[action] + (hp.Q_TABLE_LERP_SPEED) * q_value
+            
+        states, q_vectors = self._get_sq_from_q_dict(q_table)
+
+        return states, q_vectors
 
     def fit(self, states, q_vectors):
         self.qNet.train(states, q_vectors)    
 
-    def fit_to_measured_q_values(self):
-        self.reset_episode()
+    def fit_to_measured_q_values(self, sample_size):
+        episode = np.load(hp.EPISODES_FILENAME, mmap_mode="r")
+        episode = episode[:sample_size]
 
-        self.episode = np.load(EPISODES_FILENAME, mmap_mode="r")
-        self.episode = self.episode[:SAMPLE_SIZE]
+        states = np.array([self._get_sarnd(step)[0] for step in steps])
 
-        state_len = self.state_shape[0]
-        states = np.array([self.episode[i][:state_len] for i in range(len(self.episode))])        
-
-        q_values = self.get_Q_values_batch(states)
         q_table = defaultdict(lambda: np.zeros(self.action_shape))
-
-        for i in range(len(states)):
-            state = states[i]
-            q_value = q_values[i]
-            q_table[tuple(state)] = q_value
+        q_table = self._fill_q_dict(q_table, states)
         
         q_value = 0
         q_vectors = []
 
         for step in reversed(self.episode):
-            state = np.array(step[:state_len])
-            action = int(step[state_len])
-            reward = float(step[state_len + 1])
-            done = bool(step[-1])
+            state, action, reward, _, done = self._get_sarnd(step)
 
             if done:
                 q_value = 0
@@ -181,7 +171,7 @@ class DoubleDeepQAgent:
             q_value = reward + self.gamma * q_value
 
             q_table_row = q_table[tuple(state)]
-            q_table_row[action] = .5 * (q_table_row[action] + q_value)
+            q_table_row[action] = (1 - hp.Q_TABLE_LERP_SPEED) * q_table_row[action] + hp.Q_TABLE_LERP_SPEED * q_value
             
             q_vectors.append(np.array(q_table_row))
 
