@@ -30,7 +30,7 @@ def run(num_episodes):
       nonlocal total, ddqAgent
 
       print(strftime("%H:%M:%S", localtime()), "RL episode ends. total: ", total)
-      NpyAppendArray(hp.RL_RESULTS_PATH, delete_if_exists = True).append(np.array([total]))
+      NpyAppendArray(hp.RL_RESULTS_PATH, delete_if_exists = False).append(np.array([total]))
       total = 0
 
       ddqAgent.save_episode()
